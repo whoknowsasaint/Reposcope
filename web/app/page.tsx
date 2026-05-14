@@ -238,7 +238,7 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <VideoPlayer src="/demo.mp4" onClose={() => setDemoOpen(false)} />
+                <VideoPlayer src="/demo.webm" onClose={() => setDemoOpen(false)} />
               </motion.div>
             </motion.div>
           )}

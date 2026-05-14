@@ -94,7 +94,7 @@ Then open http://localhost:3000
 
 ## Live Demo
 
-[Watch the demo](https://raw.githubusercontent.com/whoknowsasaint/reposcope/main/web/public/demo.mp4)
+[Watch the demo](https://raw.githubusercontent.com/whoknowsasaint/reposcope/main/web/public/demo.webm)
 
 **Frontend:** [reposcope.vercel.app](https://reposcope.vercel.app)  
 **Backend:** Self-hosted locally (`reposcope server`)
