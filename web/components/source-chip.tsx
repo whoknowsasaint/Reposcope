@@ -122,7 +122,7 @@ export function SourceChip({
 
   return (
     <div className="rounded-xl overflow-hidden ring-1 ring-white/[0.06] bg-[#0d1117]">
-      {/* Header — Always visible */}
+      {/* Header - Always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors text-left group"

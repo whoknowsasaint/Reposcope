@@ -147,7 +147,7 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
     return () => clearTimeout(timer);
   }, [currentLine, isPlaying]);
 
-  // Typing animation — types character by character, loops forever
+  // Typing animation - types character by character, loops forever
   useEffect(() => {
     const currentCmd = installSteps[installStep];
     if (typedText.length < currentCmd.length) {
@@ -208,7 +208,7 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
               <RotateCcw size={14} />
             </button>
           </div>
-          <span className="text-[12px] text-[#8b949e] font-mono">PowerShell — reposcope</span>
+          <span className="text-[12px] text-[#8b949e] font-mono">PowerShell - reposcope</span>
         </div>
         <div ref={terminalRef} className="p-4 h-[320px] overflow-y-auto font-mono text-[13px] leading-relaxed">
           <div className="text-[#8b949e] mb-2">$ reposcope list</div>
@@ -245,7 +245,7 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
         </AnimatePresence>
       </div>
 
-      {/* Animated Install Commands — types character by character, loops forever */}
+      {/* Animated Install Commands - types character by character, loops forever */}
       <div className="mt-6 flex items-center justify-center gap-3">
         <div className="flex items-center gap-2 px-4 py-2.5 bg-[#161b22] rounded-lg ring-1 ring-white/[0.08]">
           <span className="text-[#8b949e] text-[13px] font-mono flex-shrink-0">$</span>
@@ -512,7 +512,7 @@ Lines: 18-34
           <span className="ml-auto text-[12px] text-[#636366] font-mono">reposcope/core/chunker.py</span>
         </div>
         <div className="p-4 font-mono text-[12px] sm:text-[13px] leading-relaxed overflow-x-auto"><pre className="text-[#c9d1d9] whitespace-pre-wrap">{view === "raw" ? rawCode : chunkedView}</pre></div>
-        <div className="px-4 py-3 bg-[#161b22] border-t border-white/[0.06] flex items-center gap-6 text-[12px] text-[#8b949e]"><span>{view === "raw" ? "34 lines" : "8 semantic chunks"}</span><span>{view === "raw" ? "1 function" : "Avg 205 tokens/chunk"}</span><span className="text-[#7ee787]">{view === "chunked" ? "Preserves function boundaries" : "Used in production — indexing real repos"}</span></div>
+        <div className="px-4 py-3 bg-[#161b22] border-t border-white/[0.06] flex items-center gap-6 text-[12px] text-[#8b949e]"><span>{view === "raw" ? "34 lines" : "8 semantic chunks"}</span><span>{view === "raw" ? "1 function" : "Avg 205 tokens/chunk"}</span><span className="text-[#7ee787]">{view === "chunked" ? "Preserves function boundaries" : "Used in production - indexing real repos"}</span></div>
       </div>
     </div>
   );
@@ -564,7 +564,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] mb-6"><span className="w-2 h-2 rounded-full bg-[#7ee787] animate-pulse" /><span className="text-[13px] text-[#86868b]">Open source — MIT License</span></div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] mb-6"><span className="w-2 h-2 rounded-full bg-[#7ee787] animate-pulse" /><span className="text-[13px] text-[#86868b]">Open source - MIT License</span></div>
               <h1 className="text-[40px] sm:text-[52px] font-bold tracking-tight leading-[1.1] mb-6">Chat with any<br /><span className="text-[#86868b]">codebase.</span></h1>
               <p className="text-[17px] text-[#86868b] leading-relaxed mb-8 max-w-lg">Onboard to new repos in minutes instead of weeks. Ask questions in plain English and get real answers with file references.</p>
               <div className="flex flex-wrap items-center gap-4">

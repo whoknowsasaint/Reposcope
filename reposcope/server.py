@@ -245,10 +245,10 @@ async def chat_stream(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Conversation does not belong to this repository")
 
     async def event_generator():
-        # old — sync for with async generator
+        # old - sync for with async generator
         # for event in ask_question_stream(...):
         
-        #  new — async for with async generator
+        #  new - async for with async generator
         async for event in ask_question_stream(
             request.repo_id,
             request.query,

@@ -232,7 +232,7 @@ export const ChatMessage = memo(function ChatMessage({
           {error ? (
             <p className="text-[15px] text-[#86868b] leading-relaxed">{content || "Network error. The response could not be loaded."}</p>
           ) : isStreaming ? (
-            // PLAIN TEXT DURING STREAMING — no markdown parsing
+            // PLAIN TEXT DURING STREAMING - no markdown parsing
             <div className="text-[15px] text-[#e5e5e7] leading-relaxed whitespace-pre-wrap">
               {content}
               <span className="inline-block w-[2px] h-[1em] bg-[#636366] ml-0.5 animate-pulse align-middle" />

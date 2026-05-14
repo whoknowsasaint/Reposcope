@@ -7,7 +7,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Force dark scrollbar everywhere — overrides browser/OS preferences */
+/* Force dark scrollbar everywhere - overrides browser/OS preferences */
 html {
   color-scheme: dark;
   scrollbar-width: thin;

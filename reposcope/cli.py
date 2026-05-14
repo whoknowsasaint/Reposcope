@@ -101,7 +101,7 @@ def main():
 @click.argument("url")
 def index(url: str):
     """Index a GitHub repository with progress tracking."""
-    # Run locally — no server needed. Writes directly to ChromaDB.
+    # Run locally - no server needed. Writes directly to ChromaDB.
     try:
         repo_id = index_repo(url)
         console.print(f"[green]OK Indexed {url}[/green]")
@@ -152,7 +152,7 @@ def export(repo_id: str, format: str):
 @main.command()
 def list():
     """List all indexed repositories."""
-    # Run locally — checks ChromaDB directly
+    # Run locally - checks ChromaDB directly
     try:
         repos = list_indexed_repos()
         if not repos:
@@ -170,7 +170,7 @@ def list():
 @click.argument("repo_id")
 def rm(repo_id: str):
     """Remove a repository from the index."""
-    # Run locally — no server needed
+    # Run locally - no server needed
     try:
         success = delete_repo(repo_id)
         if success:

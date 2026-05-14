@@ -4,11 +4,11 @@ Chat with any codebase using RAG (Retrieval-Augmented Generation). Index a GitHu
 
 ## Features
 
-- **Semantic Code Search** — Ask "how does auth work?" and get answers with file references
-- **Conversation History** — Multi-turn chat that remembers context across questions
-- **AST-Based Chunking** — Uses tree-sitter to split code by functions, classes, and methods
-- **CLI + Web UI** — Terminal-first with an optional Next.js interface
-- **Fast Inference** — Groq LLM for sub-second responses
+- **Semantic Code Search** - Ask "how does auth work?" and get answers with file references
+- **Conversation History** - Multi-turn chat that remembers context across questions
+- **AST-Based Chunking** - Uses tree-sitter to split code by functions, classes, and methods
+- **CLI + Web UI** - Terminal-first with an optional Next.js interface
+- **Fast Inference** - Groq LLM for sub-second responses
 
 ## Stack
 
@@ -74,8 +74,8 @@ reposcope chat <repo-id>
 ```
 
 Commands in chat mode:
-- `/quit` — exit
-- `/history` — show conversation history
+- `/quit` - exit
+- `/history` - show conversation history
 
 ### Remove a repo
 ```bash
@@ -123,9 +123,9 @@ reposcope/
 ## Data Storage
 
 All data is stored locally in `~/.reposcope/`:
-- `chroma/` — Vector embeddings
-- `reposcope.db` — Conversation history
-- `repos/` — Cloned repositories
+- `chroma/` - Vector embeddings
+- `reposcope.db` - Conversation history
+- `repos/` - Cloned repositories
 
 ## License
 

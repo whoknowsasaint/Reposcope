@@ -576,7 +576,7 @@ def export_repo(repo_id: str, format: str = "md") -> str:
     repo_name = local_path.name.rsplit("_", 1)[0]
     
     lines = []
-    lines.append(f"# {repo_name} — Repository Analysis")
+    lines.append(f"# {repo_name} - Repository Analysis")
     lines.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append(f"\n## Files")
     lines.append(f"\nTotal files: {sum(1 for _ in local_path.rglob('*') if _.is_file())}")

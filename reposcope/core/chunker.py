@@ -241,7 +241,7 @@ def _fill_gaps(
 
     for chunk in sorted(chunks, key=lambda c: c.start_line):
         if chunk.start_line > last_end + 1:
-            # Gap found — add a module chunk
+            # Gap found - add a module chunk
             gap_start = last_end + 1
             gap_end = chunk.start_line - 1
             gap_lines = lines[gap_start - 1 : gap_end]

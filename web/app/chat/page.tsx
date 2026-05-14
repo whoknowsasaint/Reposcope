@@ -24,6 +24,7 @@ import { ConfirmModal } from "@/components/confirm-modal";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { motion, AnimatePresence } from "framer-motion";
 import { EmptyState } from "@/components/empty-state";
 import {
   listRepos,
@@ -241,7 +242,12 @@ export default function ChatPage() {
   const [repoToDelete, setRepoToDelete] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [expandedMessage, setExpandedMessage] = useState<{ role: string; content: string } | null>(null);
+  const [showBanner, setShowBanner] = useState(true);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setShowBanner(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
   const abortStreamRef = useRef<(() => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -752,6 +758,20 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen bg-black text-white flex overflow-hidden">
+          {/* Offline Banner */}
+          {showBanner && (
+            <div className="fixed inset-x-0 top-16 z-50 flex justify-center pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="pointer-events-auto px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[13px] text-amber-400/90 backdrop-blur-sm shadow-lg"
+              >
+                Backend offline - run locally with{" "}
+                <code className="px-1.5 py-0.5 bg-amber-500/10 rounded text-[12px] font-mono">reposcope server</code>
+              </motion.div>
+            </div>
+          )}
       {error && <ErrorToast message={error} onClose={() => setError(null)} />}
 
       {successToast && (
