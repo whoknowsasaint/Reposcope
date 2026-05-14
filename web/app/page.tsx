@@ -25,6 +25,7 @@ import {
   Hash,
   Minus,
 } from "lucide-react";
+import { VideoPlayer } from "@/components/video-player";
 
 /* ─── Types ─── */
 interface TerminalLine {
@@ -100,6 +101,7 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
   const [installCopied, setInstallCopied] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const hasLoopedRef = useRef(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   const scenario: TerminalLine[] = [
     { type: "input", content: "reposcope index https://github.com/vercel/next-learn", delay: 3000, pipelineStep: "clone", fileInfo: { name: "next-learn", language: "TypeScript", lines: 0, chunks: [] }, stats: { filesDone: 0, filesTotal: 246, chunksDone: 0, elapsedMs: 0 } },
@@ -220,6 +222,27 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
           ))}
           {isPlaying && currentLine < scenario.length && <div className="text-[#7ee787] animate-pulse">|</div>}
         </div>
+        <AnimatePresence>
+          {demoOpen && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDemoOpen(false)}
+            >
+              <motion.div
+                className="relative w-full max-w-4xl"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <VideoPlayer src="/demo.mp4" onClose={() => setDemoOpen(false)} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Animated Install Commands — types character by character, loops forever */}
@@ -241,6 +264,15 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
           title="Copy to clipboard"
         >
           {installCopied ? <Check size={16} className="text-[#7ee787]" /> : <Copy size={16} className="text-[#8b949e]" />}
+        </button>
+      </div>
+      <div className="mt-4 flex justify-center">
+        <button
+          onClick={() => setDemoOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-white rounded-lg text-[13px] font-medium transition-colors ring-1 ring-white/[0.06]"
+        >
+          <Play size={14} />
+          Watch demo
         </button>
       </div>
     </div>

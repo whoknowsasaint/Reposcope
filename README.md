@@ -20,7 +20,7 @@ Chat with any codebase using RAG (Retrieval-Augmented Generation). Index a GitHu
 | History    | SQLite |
 | Backend    | FastAPI (embedded in CLI) |
 | CLI        | Click + Rich |
-| Web UI     | Next.js + shadcn/ui |
+| Web UI     | Next.js + Tailwind CSS |
 
 ## Installation
 
@@ -91,6 +91,15 @@ npm run dev
 ```
 
 Then open http://localhost:3000
+
+## Live Demo
+
+[Watch the demo](https://raw.githubusercontent.com/whoknowsasaint/reposcope/main/web/public/demo.mp4)
+
+**Frontend:** [reposcope.vercel.app](https://reposcope.vercel.app)  
+**Backend:** Self-hosted locally (`reposcope server`)
+
+The web UI is deployed for demonstration. The backend runs on your machine
 
 ## Architecture
 
