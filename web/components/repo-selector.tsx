@@ -118,26 +118,26 @@ export function RepoSelector({
         {isIndexing ? (
           <Loader2 size={14} className="text-blue-400 animate-spin" />
         ) : (
-          <GitBranch size={14} className={selected ? "text-emerald-400" : "text-[#636366]"} />
+          <GitBranch size={14} className={selected ? "text-emerald-400" : "text-white/30"} />
         )}
-        <span className="max-w-[180px] truncate">
+        <span className="max-w-[180px] truncate text-white/70">
           {isIndexing ? "Indexing..." : selected ? selected.repo_name : "Select repository"}
         </span>
         <ChevronDown
           size={14}
-          className={`text-[#636366] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`text-white/20 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-[360px] bg-[#161b22] rounded-xl ring-1 ring-white/[0.08] shadow-2xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-2 w-[360px] bg-[#111113] rounded-xl ring-1 ring-white/[0.08] shadow-2xl overflow-hidden z-50 backdrop-blur-2xl">
           {showProgress ? (
             <div className="p-5">
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <Loader2 size={18} className="text-blue-400 animate-spin" />
                   <div>
-                    <p className="text-[14px] font-medium text-[#e5e5e7]">
+                    <p className="text-[14px] font-medium text-white/80">
                       {indexingProgress?.stage === "cloning" && "Cloning repository"}
                       {indexingProgress?.stage === "scanning" && "Scanning files"}
                       {indexingProgress?.stage === "chunking" && "Chunking code"}
@@ -145,7 +145,7 @@ export function RepoSelector({
                       {indexingProgress?.stage === "storing" && "Saving to database"}
                       {!indexingProgress && "Starting..."}
                     </p>
-                    <p className="text-[12px] text-[#8b949e]">
+                    <p className="text-[12px] text-white/40">
                       {indexingProgress?.message || "Preparing..."}
                     </p>
                   </div>
@@ -159,7 +159,7 @@ export function RepoSelector({
                 </div>
 
                 {indexingProgress?.files_processed !== undefined && (
-                  <div className="flex items-center gap-4 text-[12px] text-[#636366]">
+                  <div className="flex items-center gap-4 text-[12px] text-white/30">
                     <span>{indexingProgress.files_processed}/{indexingProgress.files_total} files</span>
                     {indexingProgress.chunks_generated !== undefined && (
                       <span>{indexingProgress.chunks_generated} chunks</span>
@@ -172,13 +172,13 @@ export function RepoSelector({
             <>
               <div className="p-3 border-b border-white/[0.06]">
                 <div className="relative">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#636366]" />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/20" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search repos..."
-                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] rounded-lg text-[13px] text-[#e5e5e7] placeholder:text-[#636366] outline-none focus:ring-1 focus:ring-white/[0.1]"
+                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] rounded-lg text-[13px] text-white/70 placeholder:text-white/20 outline-none focus:ring-1 focus:ring-white/[0.1]"
                     autoFocus
                   />
                 </div>
@@ -194,8 +194,8 @@ export function RepoSelector({
               <div className="max-h-[280px] overflow-y-auto">
                 {filtered.length === 0 && !showAddForm && (
                   <div className="text-center py-8">
-                    <GitBranch size={20} className="text-[#484f58] mx-auto mb-2" />
-                    <p className="text-[13px] text-[#636366]">
+                    <GitBranch size={20} className="text-white/10 mx-auto mb-2" />
+                    <p className="text-[13px] text-white/30">
                       {searchQuery ? "No matches" : "No repositories"}
                     </p>
                     <button
@@ -224,14 +224,14 @@ export function RepoSelector({
                     {selectedRepo === repo.repo_id ? (
                       <Check size={12} className="text-emerald-400" />
                     ) : (
-                      <GitBranch size={12} className="text-[#636366]" />
+                      <GitBranch size={12} className="text-white/20" />
                     )}
 
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-[#e5e5e7] truncate">
+                      <div className="text-[13px] font-medium text-white/70 truncate">
                         {repo.repo_name}
                       </div>
-                      <div className="text-[11px] text-[#636366] font-mono truncate">
+                      <div className="text-[11px] text-white/30 font-mono truncate">
                         {repo.collection_name}
                       </div>
                     </div>
@@ -242,10 +242,10 @@ export function RepoSelector({
                           e.stopPropagation();
                           onUpdate(repo.repo_id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-blue-500/10 rounded text-[#636366] hover:text-blue-400 transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-blue-500/10 rounded text-white/30 hover:text-blue-400 transition-all"
                         title="Update repo"
                       >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <polyline points="1,8 5,4 9,8" />
                           <line x1="5" y1="4" x2="5" y2="1" />
                         </svg>
@@ -258,7 +258,7 @@ export function RepoSelector({
                           e.stopPropagation();
                           onDelete(repo.repo_id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 rounded text-[#636366] hover:text-red-400 transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 rounded text-white/30 hover:text-red-400 transition-all"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -270,7 +270,7 @@ export function RepoSelector({
               {!showAddForm ? (
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="w-full flex items-center gap-2 px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] border-t border-white/[0.06] text-[13px] text-[#8b949e] hover:text-white transition-colors"
+                  className="w-full flex items-center gap-2 px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] border-t border-white/[0.06] text-[13px] text-white/40 hover:text-white/70 transition-colors"
                 >
                   <Plus size={14} />
                   Index new repository
@@ -278,13 +278,13 @@ export function RepoSelector({
               ) : (
                 <div className="p-3 border-t border-white/[0.06] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-[#8b949e]">Clone & Index</span>
+                    <span className="text-[12px] font-medium text-white/50">Clone & Index</span>
                     <button
                       onClick={() => {
                         setShowAddForm(false);
                         setUrlError("");
                       }}
-                      className="text-[#636366] hover:text-white"
+                      className="text-white/20 hover:text-white/50"
                     >
                       <X size={14} />
                     </button>
@@ -301,7 +301,7 @@ export function RepoSelector({
                         }}
                         onKeyDown={(e) => e.key === "Enter" && handleIndex()}
                         placeholder="owner/repo"
-                        className={`w-full px-3 py-2 bg-white/[0.03] rounded-lg text-[13px] text-[#e5e5e7] placeholder:text-[#484f58] outline-none ${
+                        className={`w-full px-3 py-2 bg-white/[0.03] rounded-lg text-[13px] text-white/70 placeholder:text-white/20 outline-none ${
                           urlError ? "ring-1 ring-red-500/30" : "focus:ring-1 focus:ring-white/[0.1]"
                         }`}
                         disabled={isIndexing}
@@ -322,7 +322,7 @@ export function RepoSelector({
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-[#484f58]">
+                  <p className="text-[11px] text-white/20">
                     Example: vercel/next.js or https://github.com/vercel/next.js
                   </p>
                 </div>

@@ -45,16 +45,16 @@ function InlineCode({ children, className, ...props }: any) {
   if (isBlock) {
     return (
       <div className="my-3 rounded-xl overflow-hidden ring-1 ring-white/[0.08]">
-        <div className="flex items-center justify-between px-4 py-2 bg-[#161b22] border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-2 bg-[#0d1117]/80 backdrop-blur-sm border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <FileCode size={14} className="text-[#636366]" />
-            <span className="text-[12px] text-[#8b949e] font-mono uppercase">{match[1]}</span>
+            <FileCode size={12} className="text-white/40" />
+            <span className="text-[11px] text-white/50 font-mono uppercase">{match[1]}</span>
           </div>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] text-[#636366] hover:text-white hover:bg-white/[0.06] transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] text-white/40 hover:text-white/80 hover:bg-white/[0.08] transition-colors"
           >
-            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
             {copied ? "Copied" : "Copy"}
           </button>
         </div>
@@ -65,16 +65,16 @@ function InlineCode({ children, className, ...props }: any) {
           customStyle={{
             margin: 0,
             padding: "1rem",
-            fontSize: "0.8125rem",
+            fontSize: "0.75rem",
             lineHeight: "1.6",
-            background: "#0d1117",
+            background: "#0a0a0c",
           }}
           showLineNumbers={true}
           lineNumberStyle={{
-            color: "#484f58",
+            color: "#ffffff20",
             minWidth: "2.5em",
             paddingRight: "1em",
-            fontSize: "0.75rem",
+            fontSize: "0.7rem",
           }}
         >
           {code}
@@ -84,7 +84,7 @@ function InlineCode({ children, className, ...props }: any) {
   }
 
   return (
-    <code className="bg-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-[#e5e5e7] break-all" {...props}>
+    <code className="bg-white/[0.06] px-1.5 py-0.5 rounded text-[12px] font-mono text-white/80 break-all" {...props}>
       {children}
     </code>
   );
@@ -96,10 +96,10 @@ function FileBadge({ chunk, onClick }: { chunk: Chunk; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[11px] font-mono ring-1 ring-blue-500/20 hover:ring-blue-500/30 transition-all"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-mono ring-1 ring-blue-500/20 hover:ring-blue-500/30 transition-all"
     >
-      <FileCode size={11} />
-      <span className="truncate max-w-[200px]">{fileName}</span>
+      <FileCode size={10} />
+      <span className="truncate max-w-[180px]">{fileName}</span>
       <span className="text-blue-400/60">:{chunk.start_line}-{chunk.end_line}</span>
     </button>
   );
@@ -133,22 +133,22 @@ export const ChatMessage = memo(function ChatMessage({
           <div className="flex items-center gap-2 mb-1">
             <button
               onClick={onDelete}
-              className="p-0.5 hover:bg-white/[0.06] rounded text-[#484f58] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+              className="p-0.5 hover:bg-white/[0.08] rounded text-white/30 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
               title="Delete message"
             >
-              <Trash2 size={12} />
+              <Trash2 size={11} />
             </button>
             {createdAt && (
-              <span className="text-[11px] text-[#484f58]">{formatRelativeTime(createdAt)}</span>
+              <span className="text-[10px] text-white/30">{formatRelativeTime(createdAt)}</span>
             )}
-            <span className="text-[12px] text-[#636366] font-medium">You</span>
+            <span className="text-[11px] text-white/40 font-medium">You</span>
           </div>
-          <div className="bg-[#1c1c1e] rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[85%]">
-            <p className="text-[15px] text-[#e5e5e7] leading-relaxed whitespace-pre-wrap">{content}</p>
+          <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl rounded-tr-md px-4 py-2.5 max-w-[85%] ring-1 ring-white/[0.08]">
+            <p className="text-[14px] text-white/80 leading-relaxed whitespace-pre-wrap">{content}</p>
           </div>
         </div>
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2997ff] flex items-center justify-center mt-0.5">
-          <Terminal size={14} className="text-white" />
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/[0.08] backdrop-blur-sm flex items-center justify-center mt-0.5 ring-1 ring-white/[0.1]">
+          <Terminal size={13} className="text-white/70" />
         </div>
       </div>
     );
@@ -157,18 +157,18 @@ export const ChatMessage = memo(function ChatMessage({
   if (isStreaming && !content) {
     return (
       <div className="flex gap-3">
-        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20 flex items-center justify-center mt-0.5">
-          <Bot size={14} className="text-emerald-400" />
+        <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-500/15 backdrop-blur-sm ring-1 ring-emerald-500/30 flex items-center justify-center mt-0.5">
+          <Bot size={13} className="text-emerald-400" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[12px] text-emerald-400 font-medium">Reposcope</span>
+            <span className="text-[11px] text-emerald-400 font-medium">Reposcope</span>
           </div>
-          <div className="bg-[#1c1c1e] rounded-2xl rounded-bl-md px-4 py-3 inline-block">
+          <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3 inline-block ring-1 ring-white/[0.08]">
             <div className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#636366] animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#636366] animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-[#636366] animate-bounce" style={{ animationDelay: "300ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           </div>
         </div>
@@ -178,25 +178,25 @@ export const ChatMessage = memo(function ChatMessage({
 
   return (
     <div className="flex gap-3 group">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20 flex items-center justify-center mt-0.5">
-        <Bot size={14} className="text-emerald-400" />
+      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-500/15 backdrop-blur-sm ring-1 ring-emerald-500/30 flex items-center justify-center mt-0.5">
+        <Bot size={13} className="text-emerald-400" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-[12px] text-emerald-400 font-medium">Reposcope</span>
+          <span className="text-[11px] text-emerald-400 font-medium">Reposcope</span>
           {createdAt && !isStreaming && (
-            <span className="text-[11px] text-[#484f58]">{formatRelativeTime(createdAt)}</span>
+            <span className="text-[10px] text-white/30">{formatRelativeTime(createdAt)}</span>
           )}
           {isStreaming && (
-            <span className="text-[11px] text-[#636366]">typing...</span>
+            <span className="text-[10px] text-white/40">typing...</span>
           )}
           <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {error && onRetry && (
               <button
                 onClick={onRetry}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[12px] font-medium transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[11px] font-medium transition-colors"
               >
-                <RotateCcw size={11} />
+                <RotateCcw size={10} />
                 Retry
               </button>
             )}
@@ -204,42 +204,40 @@ export const ChatMessage = memo(function ChatMessage({
               <>
                 <button
                   onClick={onExpand}
-                  className="p-1 hover:bg-white/[0.06] rounded text-[#484f58] hover:text-[#e5e5e7] transition-colors"
+                  className="p-1 hover:bg-white/[0.08] rounded text-white/30 hover:text-white/70 transition-colors"
                   title="Expand"
                 >
-                  <Maximize2 size={14} />
+                  <Maximize2 size={13} />
                 </button>
                 <button
                   onClick={handleCopyMessage}
-                  className="p-1 hover:bg-white/[0.06] rounded text-[#484f58] hover:text-[#e5e5e7] transition-colors"
+                  className="p-1 hover:bg-white/[0.08] rounded text-white/30 hover:text-white/70 transition-colors"
                   title="Copy response"
                 >
-                  {messageCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  {messageCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                 </button>
                 <button
                   onClick={onDelete}
-                  className="p-1 hover:bg-white/[0.06] rounded text-[#484f58] hover:text-red-400 transition-colors"
+                  className="p-1 hover:bg-white/[0.08] rounded text-white/30 hover:text-red-400 transition-colors"
                   title="Delete message"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
               </>
             )}
           </div>
         </div>
 
-        <div className={`bg-[#1c1c1e] rounded-2xl rounded-bl-md px-4 py-2.5 ${error ? "ring-1 ring-red-500/20" : ""}`}>
+        <div className={`bg-white/[0.04] backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 ring-1 ring-white/[0.08] ${error ? "ring-red-500/20" : ""}`}>
           {error ? (
-            <p className="text-[15px] text-[#86868b] leading-relaxed">{content || "Network error. The response could not be loaded."}</p>
+            <p className="text-[14px] text-white/50 leading-relaxed">{content || "Network error. The response could not be loaded."}</p>
           ) : isStreaming ? (
-            // PLAIN TEXT DURING STREAMING - no markdown parsing
-            <div className="text-[15px] text-[#e5e5e7] leading-relaxed whitespace-pre-wrap">
+            <div className="text-[14px] text-white/70 leading-relaxed whitespace-pre-wrap">
               {content}
-              <span className="inline-block w-[2px] h-[1em] bg-[#636366] ml-0.5 animate-pulse align-middle" />
+              <span className="inline-block w-[2px] h-[1em] bg-white/40 ml-0.5 animate-pulse align-middle" />
             </div>
           ) : (
-            // FULL MARKDOWN ONLY WHEN COMPLETE
-            <div className="text-[15px] text-[#e5e5e7] leading-relaxed">
+            <div className="text-[14px] text-white/70 leading-relaxed">
               <ReactMarkdown
                 components={{
                   code: InlineCode,
@@ -253,20 +251,20 @@ export const ChatMessage = memo(function ChatMessage({
                     return <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>;
                   },
                   li({ children }) {
-                    return <li className="text-[15px]">{children}</li>;
+                    return <li className="text-[14px]">{children}</li>;
                   },
                   strong({ children }) {
-                    return <strong className="font-semibold text-white">{children}</strong>;
+                    return <strong className="font-semibold text-white/90">{children}</strong>;
                   },
                   h3({ children }) {
-                    return <h3 className="text-[16px] font-semibold text-white mt-4 mb-2">{children}</h3>;
+                    return <h3 className="text-[15px] font-semibold text-white/90 mt-4 mb-2">{children}</h3>;
                   },
                   h4({ children }) {
-                    return <h4 className="text-[14px] font-semibold text-white mt-3 mb-1.5">{children}</h4>;
+                    return <h4 className="text-[13px] font-semibold text-white/90 mt-3 mb-1.5">{children}</h4>;
                   },
                   blockquote({ children }) {
                     return (
-                      <blockquote className="border-l-2 border-blue-500/30 pl-4 my-3 text-[#8b949e]">
+                      <blockquote className="border-l-2 border-white/15 pl-4 my-3 text-white/50">
                         {children}
                       </blockquote>
                     );
@@ -285,8 +283,8 @@ export const ChatMessage = memo(function ChatMessage({
         {!isStreaming && !error && chunks && chunks.length > 0 && (
           <div className="mt-3">
             <div className="flex items-center gap-2 mb-2">
-              <FileCode size={12} className="text-[#636366]" />
-              <span className="text-[11px] text-[#636366] font-medium uppercase tracking-wide">
+              <FileCode size={10} className="text-white/30" />
+              <span className="text-[10px] text-white/30 font-medium uppercase tracking-wide">
                 Referenced {chunks.length} source{chunks.length > 1 ? "s" : ""}
               </span>
             </div>

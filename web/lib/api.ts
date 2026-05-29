@@ -24,6 +24,7 @@ export interface Repo {
   repo_id: string;
   repo_name: string;
   collection_name: string;
+  chunk_count?: number;
 }
 
 export interface Conversation {

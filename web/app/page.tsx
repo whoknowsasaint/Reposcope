@@ -2,16 +2,15 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   Github,
-  Terminal,
   Copy,
   Check,
   Layers,
-  Zap,
-  Lock,
   Play,
   Pause,
   RotateCcw,
@@ -19,15 +18,14 @@ import {
   FileCode,
   Database,
   Server,
-  Code2,
-  Braces,
-  Parentheses,
-  Hash,
-  Minus,
+  Search,
+  ChevronRight,
+  MessageSquare,
+  Sparkles,
+  FileText,
+  Plus,
 } from "lucide-react";
-import { VideoPlayer } from "@/components/video-player";
 
-/* ─── Types ─── */
 interface TerminalLine {
   type: "input" | "output" | "success" | "error" | "info";
   content: string;
@@ -36,72 +34,482 @@ interface TerminalLine {
   fileInfo?: FileInFlight;
   stats?: IndexStats;
 }
-
 type PipelineStep = "clone" | "parse" | "chunk" | "embed" | "store" | null;
-
 interface FileInFlight {
   name: string;
   language: string;
   lines: number;
   chunks: { type: string; lines: [number, number] }[];
 }
-
 interface IndexStats {
   filesDone: number;
   filesTotal: number;
   chunksDone: number;
   elapsedMs: number;
 }
-
 type PipelineState =
   | { phase: "idle" }
   | { phase: "running"; step: PipelineStep; file: FileInFlight; stats: IndexStats }
   | { phase: "complete"; totalFiles: number; totalChunks: number };
 
-/* ─── Code Constellation Background ─── */
-function CodeConstellation() {
-  const symbols = [
-    { Icon: Code2, x: "8%", y: "12%", size: 14, opacity: 0.04, delay: 0 },
-    { Icon: Braces, x: "85%", y: "18%", size: 12, opacity: 0.03, delay: 2 },
-    { Icon: Parentheses, x: "15%", y: "78%", size: 16, opacity: 0.035, delay: 4 },
-    { Icon: Minus, x: "72%", y: "82%", size: 10, opacity: 0.04, delay: 1 },
-    { Icon: Hash, x: "45%", y: "8%", size: 11, opacity: 0.025, delay: 3 },
-    { Icon: Code2, x: "92%", y: "55%", size: 13, opacity: 0.03, delay: 5 },
-    { Icon: Braces, x: "5%", y: "45%", size: 15, opacity: 0.035, delay: 2.5 },
-    { Icon: Parentheses, x: "60%", y: "88%", size: 12, opacity: 0.03, delay: 1.5 },
-    { Icon: Code2, x: "35%", y: "92%", size: 10, opacity: 0.04, delay: 4.5 },
-    { Icon: Hash, x: "78%", y: "35%", size: 14, opacity: 0.025, delay: 3.5 },
-  ];
+const ACCENT = "#5E6AD2";
 
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", fn);
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {symbols.map((sym, i) => (
-        <motion.div
-          key={i}
-          className="absolute text-slate-700"
-          style={{ left: sym.x, top: sym.y, opacity: sym.opacity }}
-          animate={{ y: [0, -8, 0], opacity: [sym.opacity, sym.opacity * 2, sym.opacity] }}
-          transition={{ duration: 8, repeat: Infinity, delay: sym.delay, ease: "easeInOut" }}
-        >
-          <sym.Icon size={sym.size} strokeWidth={1} />
-        </motion.div>
-      ))}
-      <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+    <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? "border-b border-white/[0.05] bg-[#08090a]/90 backdrop-blur-xl" : ""}`}>
+      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Reposcope logo" className="w-6 h-6 rounded-md" />
+            <span className="text-[14px] font-semibold text-white tracking-tight">Reposcope</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            {[{ label: "How it works", href: "#how-it-works" }, { label: "Features", href: "#features" }, { label: "Stack", href: "#stack" }].map((item) => (
+              <a key={item.label} href={item.href} className="text-[13px] text-white/40 hover:text-white/80 transition-colors">{item.label}</a>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="text-[13px] text-white/40 hover:text-white/70 transition-colors flex items-center gap-1.5">
+            <Github size={15} />
+            <span className="hidden sm:inline">GitHub</span>
+          </a>
+          <Link href="/chat" className="px-4 py-1.5 rounded-lg text-[13px] font-medium text-white transition-all hover:opacity-90" style={{ backgroundColor: ACCENT }}>
+            Launch App
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.04 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
     </div>
   );
 }
 
-/* ─── Terminal Hero Component ─── */
-function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine: number; isPlaying: boolean; lines: TerminalLine[] }) => void }) {
+function AnimatedHeadline() {
+  const words = ["grepping.", "searching.", "guessing.", "digging."];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIndex((i) => (i + 1) % words.length), 2400);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <h1 className="text-[56px] sm:text-[76px] lg:text-[92px] font-semibold tracking-[-0.04em] leading-[1.0] mb-7">
+      <span className="block">
+        Stop{" "}
+        <span className="relative inline-block" style={{ minWidth: "3ch" }}>
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={words[index]}
+              initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -28, filter: "blur(8px)" }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="inline-block"
+            >
+              {words[index]}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+      </span>
+      <span className="block text-white/20">Start asking.</span>
+    </h1>
+  );
+}
+
+function SectionLabel({ num, label }: { num: string; label: string }) {
+  return (
+    <div className="inline-flex items-center gap-2 text-[13px] text-white/25">
+      <span className="font-mono">{num}</span>
+      <span>{label}</span>
+      <ArrowRight size={12} />
+    </div>
+  );
+}
+
+function ScreenshotWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`relative screenshot-desktop-clip ${className}`}>
+      <div
+        className="w-full rounded-2xl overflow-hidden border border-white/[0.15] will-change-transform transform-gpu"
+        style={{
+       boxShadow: `
+        0 0 0 1px rgba(255,255,255,0.12),
+        0 2px 8px rgba(0,0,0,0.2),
+        0 8px 24px rgba(0,0,0,0.25),
+        0 16px 48px rgba(0,0,0,0.3)
+      ` }}
+      >
+        <div className="w-full rounded-2xl overflow-hidden border border-white/[0.10] will-change-transform transform-gpu">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroChatProduct() {
+  return (
+    <div className="relative pl-6 pr-0 sm:px-6 lg:px-16 no-mobile-padding">
+      <ScreenshotWrapper>
+        <div style={{ backgroundColor: "#0d0d0f" }}>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]" style={{ backgroundColor: "#09090b" }}>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-mono text-white/50 border border-white/[0.1]">&gt;_</div>
+              <span className="text-[13px] font-semibold text-white/70">Reposcope</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] text-[12px] text-white/40 font-mono" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+              <GitBranch size={11} className="text-white/30" />
+              <span>vercel/next-learn</span>
+              <ChevronRight size={10} className="text-white/20 rotate-90" />
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] text-white/30 border border-white/[0.07] hover:bg-white/[0.04] transition-colors">
+                <Plus size={11} />
+                <span className="hidden sm:inline">New Chat</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex" style={{ minHeight: "520px" }}>
+            <div className="w-[220px] border-r border-white/[0.05] flex-shrink-0 hidden lg:flex flex-col" style={{ backgroundColor: "#09090b" }}>
+              <div className="p-3 border-b border-white/[0.05]">
+                <div className="flex items-center gap-2 px-2 py-1.5 rounded-md border border-white/[0.06] text-[11px] text-white/20" style={{ backgroundColor: "rgba(255,255,255,0.02)" }}>
+                  <Search size={11} />
+                  <span>Search chats...</span>
+                </div>
+              </div>
+              <div className="flex-1 p-3 space-y-0.5">
+                {[
+                  { label: "how does routing work?", active: true, time: "now" },
+                  { label: "explain the data layer", active: false, time: "2m" },
+                  { label: "auth flow walkthrough", active: false, time: "5m" },
+                  { label: "middleware config", active: false, time: "12m" },
+                ].map((chat, i) => (
+                  <div key={i} className={`px-2.5 py-2 rounded-md cursor-pointer transition-colors ${chat.active ? "bg-white/[0.07]" : "hover:bg-white/[0.03]"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[11px] font-mono truncate ${chat.active ? "text-white/70" : "text-white/30"}`}>{chat.label}</span>
+                      <span className="text-[9px] text-white/15 flex-shrink-0 ml-2">{chat.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-3 border-t border-white/[0.05]">
+                <span className="text-[10px] text-white/15 font-mono">0 conversations</span>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 p-5 lg:p-8 space-y-6 overflow-hidden">
+                <div className="flex justify-end">
+                  <div className="max-w-[65%] px-4 py-3 rounded-2xl rounded-tr-sm text-[13px] text-white leading-relaxed" style={{ backgroundColor: ACCENT }}>
+                    how does routing work in this repo?
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/[0.08]" style={{ backgroundColor: ACCENT + "20" }}>
+                    <Sparkles size={13} style={{ color: ACCENT }} />
+                  </div>
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <p className="text-[13px] text-white/60 leading-relaxed">
+                      Routing uses the{" "}
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: ACCENT + "18" }}>App Router</span>
+                      {" "}with file-system conventions. Dynamic segments use{" "}
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: ACCENT + "18" }}>[param]</span>
+                      {" "}folders.
+                    </p>
+                    <div className="rounded-xl border border-white/[0.06] p-4 font-mono text-[12px] leading-[1.8]" style={{ backgroundColor: "#050507" }}>
+                      <div className="text-white/20 mb-2 text-[10px]">app/dashboard/page.tsx · lines 11-38</div>
+                      <div><span style={{ color: "#c084fc" }}>export default</span> <span style={{ color: "#60a5fa" }}>async function</span> <span style={{ color: "#dcdcaa" }}>Page</span><span style={{ color: "#d4d4d4" }}>() {"{"}</span></div>
+                      <div className="pl-4"><span style={{ color: "#c084fc" }}>const</span> <span style={{ color: "#9cdcfe" }}>data</span><span style={{ color: "#d4d4d4" }}> = </span><span style={{ color: "#c084fc" }}>await</span> <span style={{ color: "#dcdcaa" }}>fetchDashboard</span><span style={{ color: "#d4d4d4" }}>()</span></div>
+                      <div className="pl-4"><span style={{ color: "#c084fc" }}>return</span><span style={{ color: "#d4d4d4" }}> &lt;</span><span style={{ color: "#4ec9b0" }}>Dashboard</span> <span style={{ color: "#9cdcfe" }}>data</span><span style={{ color: "#d4d4d4" }}>={"{data}"} /&gt;</span></div>
+                      <div style={{ color: "#d4d4d4" }}>{"}"}</div>
+                    </div>
+                    <div className="text-[10px] text-white/20 font-mono">app/dashboard/page.tsx:11-38 · app/lib/data.ts:1-45</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <div className="max-w-[65%] px-4 py-3 rounded-2xl rounded-tr-sm text-[13px] text-white" style={{ backgroundColor: ACCENT }}>
+                    what about auth?
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/[0.08]" style={{ backgroundColor: ACCENT + "20" }}>
+                    <Sparkles size={13} style={{ color: ACCENT }} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[13px] text-white/60 leading-relaxed">
+                      Auth uses{" "}
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: ACCENT + "18" }}>NextAuth.js</span>
+                      {" "}with JWT. Config in{" "}
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: ACCENT + "18" }}>auth.ts</span>
+                      {", "}protected routes go through{" "}
+                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded" style={{ color: ACCENT, backgroundColor: ACCENT + "18" }}>middleware.ts</span>.
+                    </p>
+                    <div className="text-[10px] text-white/20 font-mono">auth.ts:23-45 · middleware.ts:12-18</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-4 lg:px-6 py-3 border-t border-white/[0.05]">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.07]" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                    <span className="text-[13px] text-white/20 flex-1">Ask anything about the codebase...</span>
+                  </div>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: ACCENT }}>
+                    <ArrowRight size={14} className="text-white" />
+                  </div>
+                </div>
+                <div className="mt-1.5 text-center">
+                  <span className="text-[9px] text-white/15">Enter to send · Shift+Enter for new line</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScreenshotWrapper>
+      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #08090a)" }} />
+    </div>
+  );
+}
+
+function VSCodeProduct({ view }: { view: "raw" | "chunked" }) {
+  const codeLines = [
+    'def _chunk_with_ast(content: str, file_path: str, language: str) -> List[CodeChunk]:',
+    '    """Chunk code using tree-sitter AST."""',
+    '    lang_module = _get_language_module(language)',
+    '    if not lang_module:',
+    '        return _simple_chunk(content, file_path)',
+    '',
+    '    parser = Parser(lang_module)',
+    '    source_bytes = content.encode("utf8", errors="ignore")',
+    '    tree = parser.parse(source_bytes)',
+    '',
+    '    query_str = QUERIES.get(language, "")',
+    '    if not query_str:',
+    '        return _simple_chunk(content, file_path)',
+    '',
+    '    query = Query(lang_module, query_str)',
+    '    cursor = QueryCursor(query)',
+    '    matches = cursor.matches(tree.root_node)',
+    '',
+    '    chunks = []',
+    '    seen_ranges = set()',
+    '',
+    '    for pattern_idx, captures_dict in matches:',
+    '        for capture_name in ("function", "class", "method"):',
+    '            if capture_name not in captures_dict:',
+    '                continue',
+    '            for node in captures_dict[capture_name]:',
+    '                start_line = node.start_point[0] + 1',
+    '                end_line = node.end_point[0] + 1',
+    '                range_key = (start_line, end_line)',
+    '',
+    '                if range_key in seen_ranges:',
+    '                    continue',
+    '                seen_ranges.add(range_key)',
+    '',
+    '                chunk_lines = content.split("\\n")[start_line - 1 : end_line]',
+    '                chunk_content = "\\n".join(chunk_lines)',
+    '',
+    '                chunks.append(',
+    '                    CodeChunk(',
+    '                        content=chunk_content,',
+    '                        file_path=file_path,',
+    '                        start_line=start_line,',
+    '                        end_line=end_line,',
+    '                        chunk_type=capture_name,',
+    '                        language=language,',
+    '                    )',
+    '                )',
+    '',
+    '    if not chunks:',
+    '        return _simple_chunk(content, file_path)',
+    '',
+    '    return _fill_gaps(chunks, content, file_path, language)',
+  ];
+  const code = codeLines.join("\n");
+
+  const chunkRanges = [
+    { startLine: 0, endLine: 4, color: "#569cd6" },
+    { startLine: 6, endLine: 8, color: "#4ec9b0" },
+    { startLine: 10, endLine: 12, color: "#dcdcaa" },
+    { startLine: 14, endLine: 16, color: "#ce9178" },
+    { startLine: 18, endLine: 43, color: "#c586c0" },
+    { startLine: 45, endLine: 49, color: "#9cdcfe" },
+  ];
+
+  const getLineHighlight = (lineIndex: number) => {
+    if (view !== "chunked") return null;
+    for (const chunk of chunkRanges) {
+      if (lineIndex >= chunk.startLine && lineIndex <= chunk.endLine) return chunk.color;
+    }
+    return null;
+  };
+
+return (
+  <div className="relative px-4 md:px-6 lg:px-8 overflow-visible">
+    <div
+      className="rounded-2xl sm:p-0 p-1 mx-auto"
+      style={{
+        width: "1150px",
+        maxWidth: "none",
+        boxShadow: "0 0 0 1px rgba(255,255,255,0.2)"
+      }}
+    >
+      <ScreenshotWrapper>
+        <div style={{ backgroundColor: "#1e1e1e" }}>
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-black/40" style={{ backgroundColor: "#323233" }}>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                <div className="w-3 h-3 rounded-full bg-[#27ca40]" />
+              </div>
+              <div className="flex items-center gap-1.5 ml-2">
+                <FileText size={12} className="text-[#519aba]" />
+                <span className="text-[11px] font-mono text-white/35">reposcope</span>
+                <span className="text-white/15 text-[11px]">/</span>
+                <span className="text-[11px] font-mono text-white/60">chunker.py</span>
+              </div>
+            </div>
+            {view === "chunked" && (
+              <div className="hidden sm:flex items-center gap-4">
+                {[{ color: "#4ec9b0", label: "parser" }, { color: "#dcdcaa", label: "query" }, { color: "#c586c0", label: "extraction" }].map((c, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: c.color + "80" }} />
+                    <span className="text-[10px] font-mono" style={{ color: c.color + "99" }}>{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex">
+            <div className="w-44 border-r border-white/[0.07] bg-[#252526] p-2.5 flex-shrink-0 hidden md:block">
+              <div className="text-[9px] text-white/20 uppercase tracking-wider mb-2.5 font-mono px-1">WORKSPACE</div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/45"><span style={{ color: "#dcb862" }}>▾</span> web/</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/35 pl-4"><span style={{ color: "#dcb862" }}>▾</span> app/</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span style={{ color: "#dcb862" }}>▸</span> chat/</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span style={{ color: "#dcb862" }}>▸</span> settings/</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span className="text-[#519aba]">·</span> globals.css</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span className="text-[#519aba]">·</span> layout.tsx</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span className="text-[#519aba]">·</span> page.tsx</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/35 pl-4"><span style={{ color: "#dcb862" }}>▾</span> components/</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span className="text-[#519aba]">·</span> chat-message.tsx</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-white/30 pl-8"><span className="text-[#519aba]">·</span> sidebar.tsx</div>
+                <div className="flex items-center gap-1.5 px-1 py-0.5 text-[11px] font-mono text-[#519aba] pl-8 rounded bg-white/[0.06]"><span className="text-[#519aba]">·</span> chunker.py</div>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex">
+                <div className="select-none text-right flex-shrink-0 py-4 pr-3 pl-4 border-r border-white/[0.05]" style={{ minWidth: "48px" }}>
+                  {codeLines.map((_, i) => {
+                    const highlight = getLineHighlight(i);
+                    return (
+                      <div key={i} className="font-mono text-[12px] leading-[22px] relative" style={{ color: highlight ? highlight + "bb" : "#4a4a4a" }}>
+                        {view === "chunked" && highlight && (
+                          <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: highlight }} />
+                        )}
+                        {i + 1}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {view === "chunked" && (
+                  <div className="flex-shrink-0 py-4" style={{ width: "4px" }}>
+                    {codeLines.map((_, i) => {
+                      const color = getLineHighlight(i);
+                      return (
+                        <div key={i} style={{ height: "22px", backgroundColor: color ? color + "30" : "transparent", borderLeft: color ? `3px solid ${color}` : "3px solid transparent" }} />
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="flex-1 py-4 pl-3 pr-4 overflow-hidden">
+                  <SyntaxHighlighter
+                    language="python"
+                    style={vscDarkPlus}
+                    showLineNumbers={false}
+                    wrapLines={true}
+                    lineProps={(lineNumber: number) => {
+                      const lineIndex = lineNumber - 1;
+                      const highlight = getLineHighlight(lineIndex);
+                      return {
+                        style: {
+                          backgroundColor: highlight ? `${highlight}12` : "transparent",
+                          display: "block",
+                          lineHeight: "22px",
+                        },
+                      };
+                    }}
+                    customStyle={{
+                      margin: 0,
+                      padding: 0,
+                      background: "transparent",
+                      fontSize: "12px",
+                      lineHeight: "22px",
+                    }}
+                  >
+                    {code}
+                  </SyntaxHighlighter>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between px-4 py-1 text-[10px] font-mono text-white/80" style={{ backgroundColor: ACCENT }}>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1"><GitBranch size={9} /> main</span>
+              {view === "chunked" && <span>6 AST chunks detected</span>}
+            </div>
+            <div className="flex items-center gap-4"><span>Python</span><span>UTF-8</span><span>Ln {codeLines.length}, Col 0</span></div>
+          </div>
+        </div>
+      </ScreenshotWrapper>
+    </div>
+    <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #08090a)" }} />
+  </div>
+);
+}
+
+function TerminalProduct({ onStateChange }: { onStateChange?: (s: { currentLine: number; isPlaying: boolean; lines: TerminalLine[] }) => void }) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [currentLine, setCurrentLine] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [installStep, setInstallStep] = useState(0);
-  const [typedText, setTypedText] = useState("");
-  const [installCopied, setInstallCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
   const hasLoopedRef = useRef(false);
-  const [demoOpen, setDemoOpen] = useState(false);
 
   const scenario: TerminalLine[] = [
     { type: "input", content: "reposcope index https://github.com/vercel/next-learn", delay: 3000, pipelineStep: "clone", fileInfo: { name: "next-learn", language: "TypeScript", lines: 0, chunks: [] }, stats: { filesDone: 0, filesTotal: 246, chunksDone: 0, elapsedMs: 0 } },
@@ -116,558 +524,393 @@ function TerminalHero({ onStateChange }: { onStateChange?: (state: { currentLine
     { type: "info", content: "Persisting vectors to ChromaDB...", delay: 4000, pipelineStep: "store", fileInfo: { name: "dashboard/page.tsx", language: "TypeScript", lines: 47, chunks: [{ type: "function", lines: [1, 18] }, { type: "class", lines: [20, 35] }, { type: "import", lines: [37, 40] }] }, stats: { filesDone: 246, filesTotal: 246, chunksDone: 564, elapsedMs: 31800 } },
     { type: "success", content: "Indexed 246 files -> 564 chunks in 38.2s", delay: 4000, pipelineStep: "store", fileInfo: { name: "dashboard/page.tsx", language: "TypeScript", lines: 47, chunks: [{ type: "function", lines: [1, 18] }, { type: "class", lines: [20, 35] }, { type: "import", lines: [37, 40] }] }, stats: { filesDone: 246, filesTotal: 246, chunksDone: 564, elapsedMs: 38200 } },
     { type: "input", content: 'reposcope ask "how does routing work?"', delay: 2000 },
-    { type: "output", content: "Routing uses the App Router with file-system", delay: 1500 },
-    { type: "output", content: "based routing. Dynamic routes use [param] folders.", delay: 1500 },
-    { type: "info", content: "", delay: 1000 },
-    { type: "info", content: "app/dashboard/page.tsx:11-38", delay: 800 },
-    { type: "info", content: "app/api/route.ts:23-67", delay: 800 },
+    { type: "output", content: "Routing uses the App Router with file-system based routing.", delay: 1500 },
+    { type: "output", content: "Dynamic routes use [param] folders.", delay: 1500 },
+    { type: "info", content: "", delay: 800 },
+    { type: "info", content: "app/dashboard/page.tsx:11-38", delay: 700 },
+    { type: "info", content: "app/api/route.ts:23-67", delay: 700 },
   ];
 
-  const installSteps = [
-    "git clone https://github.com/whoknowsasaint/reposcope",
-    "cd reposcope",
-    "pip install -e .",
-  ];
-
-  const runScenario = useCallback(() => {
-    setLines([]);
-    setCurrentLine(0);
-    setIsPlaying(true);
-    setInstallStep(0);
-    setTypedText("");
-    hasLoopedRef.current = false;
-  }, []);
+  const reset = useCallback(() => { setLines([]); setCurrentLine(0); setIsPlaying(true); hasLoopedRef.current = false; }, []);
 
   useEffect(() => {
     if (!isPlaying || currentLine >= scenario.length) return;
-    const timer = setTimeout(() => {
-      setLines((prev) => [...prev, scenario[currentLine]]);
-      setCurrentLine((prev) => prev + 1);
-    }, scenario[currentLine].delay || 2000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => { setLines((p) => [...p, scenario[currentLine]]); setCurrentLine((p) => p + 1); }, scenario[currentLine].delay ?? 2000);
+    return () => clearTimeout(t);
   }, [currentLine, isPlaying]);
-
-  // Typing animation - types character by character, loops forever
-  useEffect(() => {
-    const currentCmd = installSteps[installStep];
-    if (typedText.length < currentCmd.length) {
-      const timer = setTimeout(() => {
-        setTypedText(currentCmd.slice(0, typedText.length + 1));
-      }, 50);
-      return () => clearTimeout(timer);
-    } else {
-      const pause = setTimeout(() => {
-        setInstallStep((prev) => (prev + 1) % installSteps.length);
-        setTypedText("");
-        setInstallCopied(false);
-      }, 4500);
-      return () => clearTimeout(pause);
-    }
-  }, [typedText, installStep]);
 
   useEffect(() => {
     if (currentLine >= scenario.length && isPlaying && !hasLoopedRef.current) {
       hasLoopedRef.current = true;
-      const loopTimer = setTimeout(() => runScenario(), 70000);
-      return () => clearTimeout(loopTimer);
+      const t = setTimeout(() => reset(), 70000);
+      return () => clearTimeout(t);
     }
-  }, [currentLine, isPlaying, runScenario]);
+  }, [currentLine, isPlaying, reset]);
 
-  useEffect(() => {
-    if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-  }, [lines]);
+  useEffect(() => { if (terminalRef.current) terminalRef.current.scrollTop = terminalRef.current.scrollHeight; }, [lines]);
+  useEffect(() => { onStateChange?.({ currentLine, isPlaying, lines }); }, [currentLine, isPlaying, lines, onStateChange]);
 
-  useEffect(() => {
-    onStateChange?.({ currentLine, isPlaying, lines });
-  }, [currentLine, isPlaying, lines, onStateChange]);
-
-  const getLineColor = (type: TerminalLine["type"]) => {
-    switch (type) {
-      case "input": return "text-[#7ee787]";
-      case "success": return "text-[#7ee787]";
-      case "error": return "text-[#f85149]";
-      case "info": return "text-[#8b949e]";
-      default: return "text-[#c9d1d9]";
-    }
+  const lineColor = (type: TerminalLine["type"]) => {
+    if (type === "input") return "text-white";
+    if (type === "success") return "text-[#4ade80]";
+    if (type === "error") return "text-[#f87171]";
+    if (type === "info") return "text-white/25";
+    return "text-white/60";
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="rounded-xl overflow-hidden bg-[#0d1117] ring-1 ring-white/[0.08] shadow-2xl shadow-black/50">
-        <div className="flex items-center justify-between px-4 py-3 bg-[#161b22] border-b border-white/[0.06]">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-            <div className="w-3 h-3 rounded-full bg-[#27ca40]" />
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsPlaying(!isPlaying)} className="text-[#8b949e] hover:text-[#c9d1d9] transition-colors" title={isPlaying ? "Pause" : "Play"}>
-              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            </button>
-            <button onClick={runScenario} className="text-[#8b949e] hover:text-[#c9d1d9] transition-colors" title="Replay">
-              <RotateCcw size={14} />
-            </button>
-          </div>
-          <span className="text-[12px] text-[#8b949e] font-mono">PowerShell - reposcope</span>
-        </div>
-        <div ref={terminalRef} className="p-4 h-[320px] overflow-y-auto font-mono text-[13px] leading-relaxed">
-          <div className="text-[#8b949e] mb-2">$ reposcope list</div>
-          <div className="text-[#c9d1d9] mb-4">Indexed Repositories:</div>
-          <div className="text-[#7ee787] mb-4">  * next-learn (5ebac08309e7)</div>
-          {lines.map((line, i) => (
-            <div key={i} className={`${getLineColor(line.type)} mb-0.5`}>
-              {line.type === "input" && <span className="text-[#8b949e]">$ </span>}
-              {line.content}
+    <div className="relative pl-6 pr-0 sm:px-6 lg:px-16 no-mobile-padding">
+      <ScreenshotWrapper>
+        <div style={{ backgroundColor: "#111113" }}>
+          <div className="flex items-center px-5 py-3.5 border-b border-white/[0.06]" style={{ backgroundColor: "#0c0c0e" }}>
+            <div className="flex items-center gap-1.5 mr-4">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+              <div className="w-3 h-3 rounded-full bg-[#27ca40]" />
             </div>
-          ))}
-          {isPlaying && currentLine < scenario.length && <div className="text-[#7ee787] animate-pulse">|</div>}
+            <div className="flex-1 text-center"><span className="text-[12px] text-white/20 font-mono">reposcope — zsh</span></div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setIsPlaying((p) => !p)} className="text-white/20 hover:text-white/50 transition-colors">{isPlaying ? <Pause size={13} /> : <Play size={13} />}</button>
+              <button onClick={reset} className="text-white/20 hover:text-white/50 transition-colors"><RotateCcw size={13} /></button>
+            </div>
+          </div>
+          <div ref={terminalRef} className="p-6 h-[280px] overflow-y-auto font-mono text-[13px] leading-[1.8]" style={{ scrollbarWidth: "none" }}>
+            <div className="text-white/20 mb-1">$ reposcope list</div>
+            <div className="text-white/20 mb-1">Indexed repositories:</div>
+            <div className="mb-5" style={{ color: ACCENT }}>{"  "}&#10003; next-learn (5ebac083)</div>
+            {lines.map((line, i) => (
+              <div key={i} className={`${lineColor(line.type)} mb-0.5`}>
+                {line.type === "input" && <span className="text-white/30">$ </span>}
+                {line.content}
+              </div>
+            ))}
+            {isPlaying && currentLine < scenario.length && <span className="text-white/40 animate-pulse">&#9608;</span>}
+          </div>
         </div>
-        <AnimatePresence>
-          {demoOpen && (
-            <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDemoOpen(false)}
-            >
-              <motion.div
-                className="relative w-full max-w-4xl"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <VideoPlayer src="/demo.webm" onClose={() => setDemoOpen(false)} />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      </ScreenshotWrapper>
 
-      {/* Animated Install Commands - types character by character, loops forever */}
-      <div className="mt-6 flex items-center justify-center gap-3">
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-[#161b22] rounded-lg ring-1 ring-white/[0.08]">
-          <span className="text-[#8b949e] text-[13px] font-mono flex-shrink-0">$</span>
-          <code className="text-[13px] font-mono text-[#c9d1d9]">
-            {typedText}
-            <span className="text-[#7ee787] animate-pulse">|</span>
-          </code>
+      <div className="mt-5">
+        <p className="text-[11px] text-white/25 uppercase tracking-widest font-mono mb-2 px-1">Get started in 30 seconds</p>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex-1 flex items-center gap-3 px-4 py-3.5 rounded-xl border border-white/[0.1] font-mono text-[13px] sm:text-[14px]"
+            style={{ backgroundColor: "rgba(94,106,210,0.08)", borderColor: ACCENT + "40" }}
+          >
+            <span style={{ color: ACCENT + "80" }}>$</span>
+            <span className="text-white/70 select-all">git clone https://github.com/whoknowsasaint/reposcope</span>
+          </div>
+          <button
+            onClick={() => { navigator.clipboard.writeText("git clone https://github.com/whoknowsasaint/reposcope"); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+            className="flex items-center gap-2 px-4 py-3.5 rounded-xl border border-white/[0.1] hover:bg-white/[0.06] transition-colors text-[12px] font-medium flex-shrink-0"
+            style={{ borderColor: copied ? ACCENT + "60" : undefined, color: copied ? ACCENT : "rgba(255,255,255,0.4)" }}
+          >
+            {copied ? <><Check size={14} /><span className="hidden sm:inline">Copied!</span></> : <><Copy size={14} /><span className="hidden sm:inline">Copy</span></>}
+          </button>
         </div>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(installSteps[installStep]);
-            setInstallCopied(true);
-            setTimeout(() => setInstallCopied(false), 1500);
-          }}
-          className="p-2.5 bg-[#161b22] hover:bg-[#1f242c] rounded-lg ring-1 ring-white/[0.08] transition-all duration-300 flex-shrink-0"
-          title="Copy to clipboard"
-        >
-          {installCopied ? <Check size={16} className="text-[#7ee787]" /> : <Copy size={16} className="text-[#8b949e]" />}
-        </button>
-      </div>
-      <div className="mt-4 flex justify-center">
-        <button
-          onClick={() => setDemoOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-white rounded-lg text-[13px] font-medium transition-colors ring-1 ring-white/[0.06]"
-        >
-          <Play size={14} />
-          Watch demo
-        </button>
       </div>
     </div>
   );
 }
 
-/* ─── Aperture Pipeline (Desktop + Mobile) ─── */
-function AperturePipeline({ state }: { state: PipelineState }) {
-  const stations = [
-    { id: "clone" as const, label: "Clone", icon: GitBranch, color: "slate", desc: "Download repository" },
-    { id: "parse" as const, label: "Parse", icon: Layers, color: "emerald", desc: "Build AST tree" },
-    { id: "chunk" as const, label: "Chunk", icon: FileCode, color: "amber", desc: "Split by structure" },
-    { id: "embed" as const, label: "Embed", icon: Database, color: "blue", desc: "Generate vectors" },
-    { id: "store" as const, label: "Store", icon: Server, color: "violet", desc: "Persist to ChromaDB" },
+function PipelineProduct({ state }: { state: PipelineState }) {
+  const stations: { id: "clone" | "parse" | "chunk" | "embed" | "store"; label: string; icon: React.ElementType; desc: string }[] = [
+    { id: "clone", label: "Clone", icon: GitBranch, desc: "Download" },
+    { id: "parse", label: "Parse", icon: Layers, desc: "Build AST" },
+    { id: "chunk", label: "Chunk", icon: FileCode, desc: "Split" },
+    { id: "embed", label: "Embed", icon: Database, desc: "Vectors" },
+    { id: "store", label: "Store", icon: Server, desc: "Persist" },
   ];
-
-  const getStepStatus = (stepId: string) => {
+  const stepOrder = ["clone", "parse", "chunk", "embed", "store"];
+  const getStatus = (id: string) => {
     if (state.phase === "idle") return "idle";
     if (state.phase === "complete") return "done";
     if (state.phase !== "running") return "idle";
-    const stepOrder = ["clone", "parse", "chunk", "embed", "store"];
-    const currentIdx = stepOrder.indexOf(state.step || "");
-    const thisIdx = stepOrder.indexOf(stepId);
-    if (thisIdx < currentIdx) return "done";
-    if (thisIdx === currentIdx) return "active";
-    return "future";
+    const cur = stepOrder.indexOf(state.step ?? "");
+    const idx = stepOrder.indexOf(id);
+    if (idx < cur) return "done";
+    if (idx === cur) return "active";
+    return "idle";
   };
-
-  const getProgressPercent = () => {
+  const getProgress = () => {
     if (state.phase === "idle") return 0;
     if (state.phase === "complete") return 100;
     if (state.phase !== "running" || !state.step) return 0;
-    const stepOrder = ["clone", "parse", "chunk", "embed", "store"];
-    const idx = stepOrder.indexOf(state.step);
-    return ((idx + 0.5) / stepOrder.length) * 100;
+    return ((stepOrder.indexOf(state.step) + 0.5) / stepOrder.length) * 100;
   };
 
-  const isComplete = state.phase === "complete";
-  const isRunning = state.phase === "running";
-  const runningState = isRunning ? state : null;
-
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      {/* DESKTOP */}
-      <div className="hidden lg:block">
-        <div className="relative rounded-[20px] overflow-hidden bg-[#050508] ring-1 ring-white/[0.06] shadow-2xl shadow-black/60">
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-          <CodeConstellation />
-          <div className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
-            <div className="flex items-center gap-3">
-              {isComplete ? <motion.div className="w-2.5 h-2.5 rounded-full bg-emerald-400" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} /> : isRunning ? <motion.div className="w-2.5 h-2.5 rounded-full bg-amber-400" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }} transition={{ duration: 3, repeat: Infinity }} /> : <div className="w-2.5 h-2.5 rounded-full bg-[#484f58]" />}
-              <span className="text-[12px] text-[#8b949e] font-mono uppercase tracking-wider">{state.phase === "idle" && "Pipeline"}{isRunning && "Indexing..."}{isComplete && "Indexed"}</span>
+    <div className="relative pl-6 pr-0 sm:px-6 lg:px-16 no-mobile-padding">
+      <ScreenshotWrapper>
+        <div style={{ backgroundColor: "#111113" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]" style={{ backgroundColor: "#0c0c0e" }}>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: state.phase === "complete" ? ACCENT : state.phase === "running" ? "#fbbf24" : "rgba(255,255,255,0.15)" }} />
+              <span className="text-[11px] font-mono text-white/30 uppercase tracking-widest">
+                {state.phase === "idle" ? "Standby" : state.phase === "running" ? "Processing" : "Complete"}
+              </span>
             </div>
-            <div className="text-[12px] font-mono text-[#484f58]">{state.phase === "idle" && "5 steps"}{isRunning && <><span className="text-amber-400">{state.stats.filesDone}</span><span className="text-[#484f58]">/{state.stats.filesTotal} files</span></>}{isComplete && <span className="text-emerald-400">246 files • 564 chunks</span>}</div>
+            <span className="text-[11px] font-mono text-white/20">
+              {state.phase === "running" && <><span style={{ color: ACCENT }}>{state.stats.filesDone}</span>/{state.stats.filesTotal} files</>}
+              {state.phase === "complete" && <span style={{ color: ACCENT }}>246 files · 564 chunks</span>}
+            </span>
           </div>
-          <div className="relative z-10 px-8 py-12">
-            <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-1 bg-white/[0.03] rounded-full" />
-            <motion.div className="absolute left-8 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-amber-500/40 to-amber-500/10 rounded-full" initial={{ width: "0%" }} animate={{ width: `${getProgressPercent()}%` }} transition={{ duration: 2.5, ease: "easeInOut" }} />
-            {stations.map((_, i) => <div key={i} className="absolute top-1/2 -translate-y-1/2 w-[1px] h-3 bg-white/[0.08]" style={{ left: `${14 + i * 18}%` }} />)}
-            <div className="relative flex items-center justify-between">
-              {stations.map((station, i) => {
-                const status = getStepStatus(station.id);
-                const Icon = station.icon;
+
+          <div className="px-4 sm:px-8 py-8 sm:py-10 relative overflow-hidden">
+            <div className="relative flex items-start justify-between min-w-[480px]">
+              <div className="absolute left-0 right-0 top-[28px] h-px bg-white/[0.06]" />
+              <motion.div
+                className="absolute left-0 top-[28px] h-px"
+                style={{ backgroundColor: ACCENT + "80" }}
+                initial={{ width: "0%" }}
+                animate={{ width: `${getProgress()}%` }}
+                transition={{ duration: 2.5, ease: "easeInOut" }}
+              />
+              {stations.map((s) => {
+                const st = getStatus(s.id);
+                const Icon = s.icon;
                 return (
-                  <div key={station.id} className="relative flex flex-col items-center gap-3">
-                    <motion.div className={`relative w-14 h-14 rounded-full flex items-center justify-center ${status === "done" ? "bg-emerald-500/15 ring-2 ring-emerald-500/30" : ""} ${status === "active" ? "bg-amber-500/15 ring-2 ring-amber-500/40" : ""} ${status === "future" || status === "idle" ? "bg-white/[0.03] ring-1 ring-white/[0.08]" : ""}`} animate={status === "active" ? { boxShadow: ["0 0 20px rgba(245,158,11,0.1)", "0 0 40px rgba(245,158,11,0.2)", "0 0 20px rgba(245,158,11,0.1)"] } : {}} transition={{ duration: 3, repeat: Infinity }}>
-                      <div className={`${status === "done" ? "text-emerald-400" : ""} ${status === "active" ? "text-amber-400" : ""} ${status === "future" || status === "idle" ? "text-[#484f58]" : ""}`}>{status === "done" ? <Check size={20} /> : <Icon size={20} />}</div>
-                      {status === "active" && <motion.div className="absolute inset-0 rounded-full bg-amber-500/10" animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2, repeat: Infinity }} />}
-                    </motion.div>
-                    <div className="flex flex-col items-center gap-1">
-                      <span className={`text-[13px] font-medium ${status === "done" || status === "active" ? "text-white" : "text-[#484f58]"}`}>{station.label}</span>
-                      <span className="text-[10px] text-[#484f58]">{station.desc}</span>
+                  <div key={s.id} className="flex flex-col items-center gap-3 relative z-10">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-300"
+                      style={{
+                        backgroundColor: st === "done" || st === "active" ? ACCENT + "18" : "rgba(255,255,255,0.03)",
+                        borderColor: st === "done" || st === "active" ? ACCENT + "50" : "rgba(255,255,255,0.07)",
+                      }}
+                    >
+                      {st === "done" ? <Check size={20} style={{ color: ACCENT }} /> : <Icon size={20} className={st === "active" ? "text-white/70" : "text-white/15"} />}
                     </div>
-                    <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono ${status === "done" ? "bg-emerald-500/20 text-emerald-400" : ""} ${status === "active" ? "bg-amber-500/20 text-amber-400" : ""} ${status === "future" || status === "idle" ? "bg-white/[0.05] text-[#484f58]" : ""}`}>{status === "done" ? "✓" : i + 1}</div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`text-[13px] font-medium ${st === "idle" ? "text-white/20" : "text-white/80"}`}>{s.label}</span>
+                      <span className="text-[11px] text-white/20">{s.desc}</span>
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <AnimatePresence mode="wait">
-              {isRunning && runningState?.step && runningState?.file && (
-                <motion.div className="absolute top-1/2 -translate-y-1/2 z-30" initial={{ left: "10%", opacity: 0, scale: 0.5 }} animate={{ left: `${14 + ["clone","parse","chunk","embed","store"].indexOf(runningState.step) * 18}%`, opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} transition={{ type: "spring", stiffness: 25, damping: 20, mass: 2.5, duration: 3 }}>
-                  <MorphingFile step={runningState.step} file={runningState.file} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {isRunning && runningState?.step && <motion.div className="absolute top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-emerald-500/20 to-transparent rounded-full" style={{ left: "14%" }} animate={{ width: `${["clone","parse","chunk","embed","store"].indexOf(runningState.step) * 18}%` }} transition={{ duration: 2 }} />}
-            <AnimatePresence>{isComplete && <motion.div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20" initial={{ scale: 0, opacity: 1 }} animate={{ scale: 4, opacity: 0 }} transition={{ duration: 3, ease: "easeOut" }}><div className="w-24 h-24 rounded-full border border-emerald-500/20" /></motion.div>}</AnimatePresence>
           </div>
-          <div className="relative z-10 mx-6 mb-6">
-            <div className="rounded-xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] px-6 py-4">
-              {state.phase === "idle" && <div className="flex items-center justify-center gap-2 text-[13px] text-[#484f58]"><motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 6, repeat: Infinity }}>Ready. Click play in the terminal to start indexing.</motion.span></div>}
-              {isRunning && runningState?.file && (
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-3"><div className="w-8 h-10 bg-[#161b22] rounded border border-white/[0.06] flex flex-col items-center justify-center"><span className="text-[8px] text-[#8b949e]">{runningState.file.language.slice(0,3)}</span></div><div className="flex flex-col"><span className="text-[13px] text-white font-medium">{runningState.file.name}</span><span className="text-[11px] text-[#484f58]">{runningState.file.lines} lines</span></div></div>
-                  <div className="text-[#484f58]">→</div>
-                  <div className="flex flex-col"><span className="text-[13px] text-amber-400">{runningState.step === "clone" && "Downloading..."}{runningState.step === "parse" && "Building AST..."}{runningState.step === "chunk" && `${runningState.file.chunks.length} chunks`}{runningState.step === "embed" && `${runningState.file.chunks.length} vectors`}{runningState.step === "store" && "Persisting..."}</span><span className="text-[11px] text-[#484f58]">{runningState.step === "clone" && "Resolving deltas"}{runningState.step === "parse" && "tree-sitter extraction"}{runningState.step === "chunk" && "AST boundaries preserved"}{runningState.step === "embed" && "jina-embeddings-v3"}{runningState.step === "store" && "ChromaDB HNSW index"}</span></div>
-                  <div className="ml-auto flex items-center gap-2"><div className="w-24 h-1 bg-white/[0.06] rounded-full overflow-hidden"><motion.div className="h-full bg-amber-500/60 rounded-full" animate={{ width: ["0%", "100%"] }} transition={{ duration: 4, ease: "easeInOut" }} /></div><span className="text-[10px] text-[#484f58] font-mono">{Math.round(getProgressPercent())}%</span></div>
+
+          <div className="mx-4 sm:mx-6 mb-5 rounded-xl border border-white/[0.05] px-5 py-4 font-mono text-[12px] sm:text-[13px]" style={{ backgroundColor: "rgba(255,255,255,0.02)" }}>
+            {state.phase === "idle" && <span className="text-white/20">Run the terminal above to watch the pipeline live.</span>}
+            {state.phase === "running" && state.file && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-white/40">{state.file.name}</span>
+                <span className="text-white/15">→</span>
+                <span style={{ color: ACCENT }}>
+                  {state.step === "clone" && "downloading..."}
+                  {state.step === "parse" && "building AST..."}
+                  {state.step === "chunk" && `${state.file.chunks.length} chunks`}
+                  {state.step === "embed" && `${state.file.chunks.length} vectors`}
+                  {state.step === "store" && "persisting..."}
+                </span>
+                <div className="ml-auto w-20 h-0.5 bg-white/[0.07] rounded-full overflow-hidden">
+                  <motion.div className="h-full rounded-full" style={{ backgroundColor: ACCENT }} animate={{ width: ["0%", "100%"] }} transition={{ duration: 4, ease: "easeInOut" }} />
                 </div>
-              )}
-              {isComplete && <div className="flex items-center justify-center gap-2 text-[13px] text-emerald-400"><Check size={16} /><span>All 564 chunks indexed and ready for semantic search</span></div>}
-            </div>
+              </div>
+            )}
+            {state.phase === "complete" && <span style={{ color: ACCENT }}>&#10003; 564 chunks indexed · ready for semantic search</span>}
           </div>
         </div>
-      </div>
-
-      {/* MOBILE */}
-      <div className="lg:hidden">
-        <div className="relative rounded-2xl overflow-hidden bg-[#050508] ring-1 ring-white/[0.06]">
-          <CodeConstellation />
-          <div className="relative z-10 flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
-            <div className="flex items-center gap-2">{isComplete ? <div className="w-2 h-2 rounded-full bg-emerald-400" /> : isRunning ? <motion.div className="w-2 h-2 rounded-full bg-amber-400" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 2, repeat: Infinity }} /> : <div className="w-2 h-2 rounded-full bg-[#484f58]" />}<span className="text-[11px] text-[#8b949e] font-mono uppercase">{state.phase === "idle" && "Pipeline"}{isRunning && "Indexing..."}{isComplete && "Indexed"}</span></div>
-            <span className="text-[11px] font-mono text-[#484f58]">{isRunning && <><span className="text-amber-400">{state.stats.filesDone}</span><span className="text-[#484f58]">/{state.stats.filesTotal}</span></>}{isComplete && <span className="text-emerald-400">246 • 564</span>}</span>
-          </div>
-          <div className="relative z-10 p-4 space-y-2">
-            {stations.map((station, i) => {
-              const status = getStepStatus(station.id);
-              const Icon = station.icon;
-              const isExpanded = status === "active";
-              return (
-                <motion.div key={station.id} className={`rounded-xl border overflow-hidden ${status === "done" ? "bg-emerald-500/[0.04] border-emerald-500/15" : ""} ${status === "active" ? "bg-amber-500/[0.04] border-amber-500/25" : ""} ${status === "future" || status === "idle" ? "bg-white/[0.02] border-white/[0.05]" : ""}`} animate={isExpanded ? { scale: 1.02 } : { scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 25 }}>
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${status === "done" ? "bg-emerald-500/15 text-emerald-400" : ""} ${status === "active" ? "bg-amber-500/15 text-amber-400" : ""} ${status === "future" || status === "idle" ? "bg-white/[0.05] text-[#484f58]" : ""}`}>{status === "done" ? <Check size={16} /> : <Icon size={16} />}</div>
-                    <div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className={`text-[13px] font-medium ${status === "done" || status === "active" ? "text-white" : "text-[#484f58]"}`}>{station.label}</span><span className="text-[10px] text-[#484f58]">{station.desc}</span></div><div className="text-[11px] mt-0.5">{status === "done" && <span className="text-emerald-400/70">Complete</span>}{status === "active" && <span className="text-amber-400/70">Working...</span>}{status === "future" && <span className="text-[#484f58]">Waiting</span>}{status === "idle" && <span className="text-[#484f58]">Ready</span>}</div></div>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono flex-shrink-0 ${status === "done" ? "bg-emerald-500/10 text-emerald-400" : ""} ${status === "active" ? "bg-amber-500/10 text-amber-400" : ""} ${status === "future" || status === "idle" ? "bg-white/[0.05] text-[#484f58]" : ""}`}>{status === "done" ? "✓" : i + 1}</div>
-                  </div>
-                  <AnimatePresence>{isExpanded && runningState?.file && runningState?.step && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease: "easeInOut" }}><div className="px-4 pb-4 pt-1 border-t border-white/[0.04]"><div className="flex items-center gap-3 py-2"><MorphingFile step={runningState.step} file={runningState.file} compact /></div><div className="text-[11px] text-[#8b949e] font-mono">{runningState.step === "clone" && `Downloading ${runningState.file.name}...`}{runningState.step === "parse" && `Building AST: ${runningState.file.lines} lines → nodes`}{runningState.step === "chunk" && `Split into ${runningState.file.chunks.length} semantic units`}{runningState.step === "embed" && `Vectorizing ${runningState.file.chunks.length} chunks with Jina AI...`}{runningState.step === "store" && `Writing to ChromaDB...`}</div></div></motion.div>}</AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </div>
-          <div className="relative z-10 px-4 py-3 border-t border-white/[0.05]"><div className="text-[11px] font-mono text-[#484f58]">{state.phase === "idle" && "Tap play in terminal above"}{isRunning && runningState?.step && <span className="text-amber-400">{runningState.step} → <span className="text-[#8b949e]">{runningState.file.name}</span></span>}{isComplete && <span className="text-emerald-400">Ready for queries</span>}</div></div>
-        </div>
-      </div>
+      </ScreenshotWrapper>
+      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #08090a)" }} />
     </div>
   );
 }
 
-/* ─── Morphing File ─── */
-function MorphingFile({ step, file, compact }: { step: PipelineStep; file: FileInFlight; compact?: boolean }) {
-  if (!step) return null;
-  if (compact) {
-    const v: any = {
-      clone: <div className="w-6 h-8 bg-[#161b22] rounded border border-slate-500/20 flex items-center justify-center"><span className="text-[7px] text-slate-400">{file.language.slice(0,2)}</span></div>,
-      parse: <svg width="24" height="24" viewBox="0 0 40 40" className="text-emerald-400"><path d="M20 32 L20 18 L10 8 M20 18 L30 8" stroke="currentColor" strokeWidth="2" fill="none" /></svg>,
-      chunk: <div className="flex gap-0.5">{file.chunks.slice(0,2).map((_,i) => <div key={i} className="w-4 h-5 bg-[#161b22] rounded border border-amber-500/20" />)}</div>,
-      embed: <div className="flex gap-1">{Array.from({length: 2}).map((_,i) => <div key={i} className="w-2 h-2 rounded-full bg-blue-500" />)}</div>,
-      store: <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center"><Check size={12} className="text-emerald-400" /></div>,
-    };
-    return v[step];
-  }
-  const v: any = {
-    clone: <div className="flex flex-col items-center"><motion.div className="w-12 h-14 bg-[#161b22] rounded-lg border border-slate-500/20 flex flex-col items-center justify-center shadow-xl" animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}><span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">{file.language.slice(0,3)}</span><span className="text-[8px] text-[#484f58] mt-0.5">{file.name.slice(0,10)}</span></motion.div></div>,
-    parse: <div className="flex flex-col items-center"><svg width="48" height="48" viewBox="0 0 48 48" className="text-emerald-400"><motion.path d="M24 38 L24 22 L12 10 M24 22 L36 10" stroke="currentColor" strokeWidth="2.5" fill="none" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 2, ease: "easeInOut" }} /><motion.circle cx="24" cy="38" r="3" fill="currentColor" /><motion.circle cx="12" cy="10" r="2.5" fill="currentColor" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.5, type: "spring" }} /><motion.circle cx="36" cy="10" r="2.5" fill="currentColor" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.8, type: "spring" }} /></svg><motion.span className="text-[9px] font-mono text-emerald-400 mt-1 tracking-wider" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>{file.lines} LINES</motion.span></div>,
-    chunk: <div className="flex gap-1.5">{file.chunks.map((chunk, i) => <motion.div key={i} className="w-9 h-11 bg-[#161b22] rounded-lg border border-amber-500/25 flex items-center justify-center shadow-lg" initial={{ scale: 0, y: 20, rotate: -10 }} animate={{ scale: 1, y: 0, rotate: 0 }} transition={{ delay: i * 0.5, type: "spring", stiffness: 40, damping: 10 }}><span className="text-[10px] text-amber-400 font-mono uppercase">{chunk.type[0]}</span></motion.div>)}</div>,
-    embed: <div className="flex gap-3">{Array.from({ length: Math.min(file.chunks.length, 3) }).map((_, i) => <motion.div key={i} className="w-4 h-4 rounded-full bg-blue-500 shadow-lg" animate={{ scale: [1, 1.6, 1], opacity: [0.3, 1, 0.3], boxShadow: ["0 0 8px rgba(59,130,246,0.2)", "0 0 20px rgba(59,130,246,0.6)", "0 0 8px rgba(59,130,246,0.2)"] }} transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }} />)}</div>,
-    store: <motion.div className="w-12 h-12 rounded-full bg-emerald-500/15 border-2 border-emerald-500/30 flex items-center justify-center shadow-xl" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 120, damping: 12 }}><motion.div className="absolute inset-0 rounded-full bg-emerald-500/10" animate={{ scale: [1, 2.5], opacity: [0.6, 0] }} transition={{ duration: 1.5, repeat: 2 }} /><Check size={20} className="text-emerald-400" /></motion.div>,
-  };
-  return <div className="relative">{v[step]}<motion.div className="absolute inset-0 -z-10 blur-2xl" animate={{ opacity: [0.15, 0.4, 0.15] }} transition={{ duration: 3, repeat: Infinity }} style={{ background: step === "clone" ? "rgba(100,116,139,0.3)" : step === "parse" ? "rgba(52,211,153,0.3)" : step === "chunk" ? "rgba(245,158,11,0.3)" : step === "embed" ? "rgba(59,130,246,0.3)" : "rgba(52,211,153,0.3)" }} /></div>;
-}
-
-/* ─── Code Comparison Demo ─── */
-function CodeComparison() {
-  const [view, setView] = useState<"raw" | "chunked">("raw");
-  const rawCode = `def _chunk_with_ast(content, file_path, language):
-    """Chunk code using tree-sitter AST."""
-    lang_module = _get_language_module(language)
-    if not lang_module:
-        return _simple_chunk(content, file_path)
-
-    parser = Parser(lang_module)
-    source_bytes = bytes(content, "utf8")
-    tree = parser.parse(source_bytes)
-
-    query_str = QUERIES.get(language, "")
-    if not query_str:
-        return _simple_chunk(content, file_path)
-
-    query = Query(lang_module, query_str)
-    cursor = QueryCursor(query)
-    matches = cursor.matches(tree.root_node)
-
-    chunks = []
-    for pattern_idx, captures_dict in matches:
-        for capture_name in ("function", "class", "method"):
-            if capture_name not in captures_dict:
-                continue
-            for node in captures_dict[capture_name]:
-                start_line = node.start_point[0] + 1
-                end_line = node.end_point[0] + 1
-                chunk_lines = content.split("\\n")[start_line-1:end_line]
-                chunks.append(CodeChunk(
-                    content="\\n".join(chunk_lines),
-                    file_path=file_path,
-                    start_line=start_line,
-                    end_line=end_line,
-                    chunk_type=capture_name,
-                    language=language,
-                ))
-    return chunks or _simple_chunk(content, file_path)`;
-  const chunkedView = `=== Chunk 1/8 ===
-Type: function_definition
-Lines: 1-34
-Name: _chunk_with_ast
----
-def _chunk_with_ast(content, file_path, language):
-    """Chunk code using tree-sitter AST."""
-
-=== Chunk 2/8 ===
-Type: parser setup
-Lines: 8-10
----
-    parser = Parser(lang_module)
-    source_bytes = bytes(content, "utf8")
-    tree = parser.parse(source_bytes)
-
-=== Chunk 3/8 ===
-Type: query execution
-Lines: 14-16
----
-    query = Query(lang_module, query_str)
-    cursor = QueryCursor(query)
-    matches = cursor.matches(tree.root_node)
-
-=== Chunks 4-8 ===
-Type: method / class extraction
-Lines: 18-34
----
-    for pattern_idx, captures_dict in matches:
-        ...extracts node positions...
-        ...creates CodeChunk objects...`;
+function StackGrid() {
+  const items = [
+    { label: "Backend", value: "FastAPI + Uvicorn" },
+    { label: "Vectors", value: "ChromaDB" },
+    { label: "Embeddings", value: "Jina AI v3" },
+    { label: "LLM", value: "Groq Llama 3.3" },
+    { label: "Frontend", value: "Next.js 14" },
+    { label: "Parsing", value: "tree-sitter" },
+    { label: "Storage", value: "SQLite + Chroma" },
+    { label: "Streaming", value: "Server-Sent Events" },
+  ];
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="rounded-xl overflow-hidden bg-[#0d1117] ring-1 ring-white/[0.08]">
-        <div className="flex items-center gap-1 px-2 py-2 bg-[#161b22] border-b border-white/[0.06]">
-          <button onClick={() => setView("raw")} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === "raw" ? "bg-white/[0.08] text-white" : "text-[#8b949e] hover:text-white"}`}>Raw File</button>
-          <button onClick={() => setView("chunked")} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === "chunked" ? "bg-white/[0.08] text-white" : "text-[#8b949e] hover:text-white"}`}>AST Chunks</button>
-          <span className="ml-auto text-[12px] text-[#636366] font-mono">reposcope/core/chunker.py</span>
-        </div>
-        <div className="p-4 font-mono text-[12px] sm:text-[13px] leading-relaxed overflow-x-auto"><pre className="text-[#c9d1d9] whitespace-pre-wrap">{view === "raw" ? rawCode : chunkedView}</pre></div>
-        <div className="px-4 py-3 bg-[#161b22] border-t border-white/[0.06] flex items-center gap-6 text-[12px] text-[#8b949e]"><span>{view === "raw" ? "34 lines" : "8 semantic chunks"}</span><span>{view === "raw" ? "1 function" : "Avg 205 tokens/chunk"}</span><span className="text-[#7ee787]">{view === "chunked" ? "Preserves function boundaries" : "Used in production - indexing real repos"}</span></div>
-      </div>
+    <div className="grid grid-cols-2 gap-2">
+      {items.map((item, i) => (
+        <FadeIn key={i} delay={i * 40}>
+          <div className="px-5 py-4 rounded-xl border border-white/[0.05] hover:bg-white/[0.04] transition-colors" style={{ backgroundColor: "rgba(255,255,255,0.02)" }}>
+            <div className="text-[10px] text-white/25 uppercase tracking-wider mb-1">{item.label}</div>
+            <div className="text-[14px] text-white/65 font-medium">{item.value}</div>
+          </div>
+        </FadeIn>
+      ))}
     </div>
   );
 }
 
-/* ─── Fade In Wrapper ─── */
-function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } }, { threshold: 0.1 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-  return <div ref={ref} className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
-}
-
-/* ─── Main Page ─── */
 export default function Home() {
   const [pipelineState, setPipelineState] = useState<PipelineState>({ phase: "idle" });
-  const handleTerminalStateChange = useCallback((terminalState: { currentLine: number; isPlaying: boolean; lines: TerminalLine[] }) => {
-    const currentScenarioLine = terminalState.lines[terminalState.lines.length - 1];
-    if (!terminalState.isPlaying) { setPipelineState({ phase: "idle" }); return; }
-    if (currentScenarioLine?.pipelineStep) {
-      setPipelineState({ phase: "running", step: currentScenarioLine.pipelineStep, file: currentScenarioLine.fileInfo || { name: "unknown", language: "TypeScript", lines: 0, chunks: [] }, stats: currentScenarioLine.stats || { filesDone: 0, filesTotal: 246, chunksDone: 0, elapsedMs: 0 } });
-    } else if (terminalState.currentLine >= 11) {
-      setPipelineState({ phase: "complete", totalFiles: 246, totalChunks: 564 });
-    }
-  }, []);
+  const [codeView, setCodeView] = useState<"raw" | "chunked">("raw");
+
+  const handleTerminalState = useCallback(
+    (s: { currentLine: number; isPlaying: boolean; lines: TerminalLine[] }) => {
+      const last = s.lines[s.lines.length - 1];
+      if (!s.isPlaying) { setPipelineState({ phase: "idle" }); return; }
+      if (last?.pipelineStep) {
+        setPipelineState({
+          phase: "running",
+          step: last.pipelineStep,
+          file: last.fileInfo ?? { name: "unknown", language: "TypeScript", lines: 0, chunks: [] },
+          stats: last.stats ?? { filesDone: 0, filesTotal: 246, chunksDone: 0, elapsedMs: 0 },
+        });
+      } else if (s.currentLine >= 11) {
+        setPipelineState({ phase: "complete", totalFiles: 246, totalChunks: 564 });
+      }
+    }, []
+  );
 
   return (
-    <main className="min-h-screen bg-[#000000] text-white selection:bg-white/20">
-      <nav className="fixed top-0 inset-x-0 z-50 bg-[#000000]/80 backdrop-blur-2xl border-b border-white/[0.06]">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center ring-1 ring-white/[0.08]"><Terminal size={16} className="text-white" /></div>
-            <Link href="/" className="text-[15px] font-semibold tracking-tight hover:text-[#e5e5e7] transition-colors">Reposcope</Link>
-          </div>
-          <div className="flex items-center gap-6">
-            <a href="#how-it-works" className="hidden sm:block text-[14px] text-[#86868b] hover:text-white transition-colors">How it works</a>
-            <a href="#features" className="hidden sm:block text-[14px] text-[#86868b] hover:text-white transition-colors">Features</a>
-            <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[14px] text-[#86868b] hover:text-white transition-colors"><Github size={16} /><span className="hidden sm:inline">GitHub</span></a>
-            <Link href="/chat" className="px-4 py-2 bg-white/[0.08] hover:bg-white/[0.12] text-white rounded-lg text-[13px] font-medium transition-colors ring-1 ring-white/[0.08]">Launch App</Link>
-          </div>
-        </div>
-      </nav>
+    <main className="min-h-screen bg-[#08090a] text-white overflow-x-hidden selection:bg-white/10">
+      <Nav />
 
-      <section className="pt-32 pb-16 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] mb-6"><span className="w-2 h-2 rounded-full bg-[#7ee787] animate-pulse" /><span className="text-[13px] text-[#86868b]">Open source - MIT License</span></div>
-              <h1 className="text-[40px] sm:text-[52px] font-bold tracking-tight leading-[1.1] mb-6">Chat with any<br /><span className="text-[#86868b]">codebase.</span></h1>
-              <p className="text-[17px] text-[#86868b] leading-relaxed mb-8 max-w-lg">Onboard to new repos in minutes instead of weeks. Ask questions in plain English and get real answers with file references.</p>
-              <div className="flex flex-wrap items-center gap-4">
-                <Link href="/chat" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg text-[15px] font-semibold hover:bg-[#f5f5f7] transition-colors active:scale-95">Try the Web UI<ArrowRight size={16} /></Link>
-                <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-lg text-[15px] font-medium transition-colors ring-1 ring-white/[0.08]"><Github size={16} />Star on GitHub</a>
-              </div>
-              <div className="mt-8 flex items-center gap-6 text-[13px] text-[#636366]"><div className="flex items-center gap-2"><Zap size={14} /><span>Groq-powered</span></div><div className="flex items-center gap-2"><Layers size={14} /><span>AST chunking</span></div><div className="flex items-center gap-2"><Terminal size={14} /><span>CLI + Web UI</span></div></div>
-            </FadeIn>
-            <FadeIn delay={200}><TerminalHero onStateChange={handleTerminalStateChange} /></FadeIn>
-          </div>
+      <section className="pt-32 pb-0 overflow-x-hidden">
+        <div className="max-w-3xl mx-auto px-6 text-center mb-16">
+          <FadeIn>
+            <div className="inline-flex items-center gap-2 mb-7 px-3 py-1.5 rounded-full border border-white/[0.07] text-[12px] text-white/35" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ACCENT }} />
+              Open source · MIT License
+            </div>
+            <AnimatedHeadline />
+            <p className="text-[18px] sm:text-[20px] text-white/35 leading-relaxed mb-10 max-w-lg mx-auto">
+              Index any GitHub repo and chat with your codebase in plain English. Precise answers with file references and line numbers.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/chat" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-white transition-all hover:opacity-90 group" style={{ backgroundColor: ACCENT }}>
+                Launch App <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-white/40 hover:text-white/70 border border-white/[0.08] hover:border-white/[0.15] transition-all">
+                <Github size={15} /> GitHub
+              </a>
+            </div>
+          </FadeIn>
         </div>
+        <FadeIn delay={200}>
+          <HeroChatProduct />
+        </FadeIn>
       </section>
 
-      <section id="how-it-works" className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn className="text-center mb-16"><h2 className="text-[32px] sm:text-[40px] font-bold tracking-tight mb-4">Pipeline you can inspect.</h2><p className="text-[17px] text-[#86868b] max-w-xl mx-auto">Every step is transparent. Watch your code travel from raw files to searchable vectors.</p></FadeIn>
-          <FadeIn delay={100}><AperturePipeline state={pipelineState} /></FadeIn>
+      <section className="pt-32 pb-24 border-t border-white/[0.04] overflow-x-hidden">
+        <div className="max-w-3xl mx-auto px-6 text-center mb-16">
+          <FadeIn>
+            <SectionLabel num="1.0" label="Index" />
+            <h2 className="text-[40px] sm:text-[56px] font-semibold tracking-[-0.03em] mt-4 mb-4">Index from the CLI.</h2>
+            <p className="text-[17px] text-white/35 leading-relaxed max-w-md mx-auto">One command. Automate in CI. Any public or private repo.</p>
+          </FadeIn>
         </div>
+        <FadeIn delay={100}>
+          <TerminalProduct onStateChange={handleTerminalState} />
+        </FadeIn>
       </section>
 
-      <section id="features" className="py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[13px] font-medium mb-6 ring-1 ring-emerald-500/20"><Layers size={14} />AST-Aware Chunking</div>
-                <h2 className="text-[32px] sm:text-[40px] font-bold tracking-tight mb-4">Split by structure,<br /><span className="text-[#86868b]">not by line count.</span></h2>
-                <p className="text-[17px] text-[#86868b] leading-relaxed mb-6">Traditional RAG splits files every N lines, breaking functions mid-body. We use tree-sitter to chunk at function/class/method boundaries, preserving semantic meaning and producing cleaner retrieval results.</p>
-                <ul className="space-y-3 text-[14px] text-[#86868b]">
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>Supports Python, TypeScript, JavaScript, Go, Rust, and more</span></li>
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>564 chunks from 246 files on vercel/next-learn</span></li>
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>Each chunk is a complete function, class, or method</span></li>
-                </ul>
-              </div>
-            </FadeIn>
-            <FadeIn delay={200}><CodeComparison /></FadeIn>
-          </div>
+      <section id="how-it-works" className="pt-32 pb-24 border-t border-white/[0.04] overflow-x-hidden">
+        <div className="max-w-3xl mx-auto px-6 text-center mb-16">
+          <FadeIn>
+            <SectionLabel num="2.0" label="Pipeline" />
+            <h2 className="text-[40px] sm:text-[56px] font-semibold tracking-[-0.03em] mt-4 mb-4">Pipeline you can inspect.</h2>
+            <p className="text-[17px] text-white/35 leading-relaxed max-w-md mx-auto">Every stage transparent. Watch your code travel from raw files to searchable vectors.</p>
+          </FadeIn>
         </div>
+        <FadeIn delay={100}>
+          <PipelineProduct state={pipelineState} />
+        </FadeIn>
       </section>
 
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn className="text-center mb-16"><h2 className="text-[32px] sm:text-[40px] font-bold tracking-tight mb-4">Built for how you actually work.</h2></FadeIn>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[{ title: "Onboarding", desc: "New team member? Index the repo and ask 'how does auth work?' Get the exact files, functions, and call chains in seconds.", metric: "Onboard in hours, not weeks" },{ title: "Code Review", desc: "Reviewing a PR that touches 40 files? Ask 'what does this change affect?' and get every reference mapped.", metric: "Understand impact instantly" },{ title: "Legacy Maintenance", desc: "Inherited a codebase with no docs? Ask why things work the way they do. Get answers with precise line references.", metric: "Decode legacy code fast" }].map((useCase, i) => (
-              <FadeIn key={i} delay={i * 100}><div className="h-full p-6 rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06] hover:bg-white/[0.04] transition-colors"><h3 className="text-[18px] font-semibold mb-3">{useCase.title}</h3><p className="text-[14px] text-[#86868b] leading-relaxed mb-4">{useCase.desc}</p><div className="text-[13px] text-[#7ee787] font-medium">{useCase.metric}</div></div></FadeIn>
+      <section id="features" className="pt-32 pb-24 border-t border-white/[0.04] overflow-x-hidden">
+        <div className="max-w-3xl mx-auto px-6 text-center mb-12">
+          <FadeIn>
+            <SectionLabel num="3.0" label="Chunking" />
+            <h2 className="text-[40px] sm:text-[56px] font-semibold tracking-[-0.03em] mt-4 mb-4">
+              Split by structure,<br />
+              <span className="text-white/20">not line count.</span>
+            </h2>
+            <p className="text-[17px] text-white/35 leading-relaxed max-w-xl mx-auto">
+              Traditional RAG splits every N lines, breaking functions mid-body. tree-sitter chunks at AST boundaries — each chunk is a complete semantic unit.
+            </p>
+          </FadeIn>
+        </div>
+        <FadeIn delay={80}>
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {(["raw", "chunked"] as const).map((v) => (
+              <button key={v} onClick={() => setCodeView(v)}
+                className={`px-5 py-2 rounded-lg text-[13px] font-mono transition-all border ${codeView === v ? "text-white border-white/[0.15] bg-white/[0.08]" : "text-white/30 border-transparent hover:text-white/50"}`}>
+                {v === "raw" ? "Raw file" : "AST chunks"}
+              </button>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-white/[0.01]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <div className="rounded-xl overflow-hidden bg-[#0d1117] ring-1 ring-white/[0.08] p-6">
-                <div className="font-mono text-[13px] leading-relaxed">
-                  <div className="text-[#8b949e] mb-4"># Tech Stack</div>
-                  <div className="text-[#ff7b72]">backend:</div><div className="text-[#79c0ff] ml-4">framework:</div><div className="text-[#a5d6ff] ml-8">FastAPI + Uvicorn</div>
-                  <div className="text-[#79c0ff] ml-4">vector_db:</div><div className="text-[#a5d6ff] ml-8">ChromaDB (persistent)</div>
-                  <div className="text-[#79c0ff] ml-4">embeddings:</div><div className="text-[#a5d6ff] ml-8">Jina AI (jina-embeddings-v3)</div>
-                  <div className="text-[#79c0ff] ml-4">llm:</div><div className="text-[#a5d6ff] ml-8">Groq (Llama 3.3 70B)</div>
-                  <div className="text-[#ff7b72] mt-3">frontend:</div><div className="text-[#79c0ff] ml-4">framework:</div><div className="text-[#a5d6ff] ml-8">Next.js 14 + React 18</div>
-                  <div className="text-[#79c0ff] ml-4">styling:</div><div className="text-[#a5d6ff] ml-8">Tailwind CSS</div>
-                  <div className="text-[#ff7b72] mt-3">parsing:</div><div className="text-[#79c0ff] ml-4">ast:</div><div className="text-[#a5d6ff] ml-8">tree-sitter (15+ languages)</div>
-                  <div className="text-[#8b949e] mt-4"># All local-first, no data leaves your machine</div>
-                </div>
+        </FadeIn>
+        <FadeIn delay={150}>
+          <VSCodeProduct view={codeView} />
+        </FadeIn>
+        <FadeIn delay={200}>
+          <div className="max-w-3xl mx-auto px-6 mt-16 grid sm:grid-cols-3 gap-8 text-center">
+            {[
+              { stat: "8+", label: "Languages", sub: "Python, TS, Go, Rust, Java..." },
+              { stat: "564", label: "Chunks", sub: "from 246 files on vercel/next-learn" },
+              { stat: "100%", label: "Boundary-aware", sub: "Every chunk a complete unit" },
+            ].map((item, i) => (
+              <div key={i}>
+                <div className="text-[44px] font-semibold tracking-tight mb-1" style={{ color: ACCENT }}>{item.stat}</div>
+                <div className="text-[14px] text-white/55 font-medium mb-0.5">{item.label}</div>
+                <div className="text-[12px] text-white/20">{item.sub}</div>
               </div>
-            </FadeIn>
-            <FadeIn delay={200}>
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-[13px] font-medium mb-6 ring-1 ring-blue-500/20"><Lock size={14} />Self-Hosted</div>
-                <h2 className="text-[32px] sm:text-[40px] font-bold tracking-tight mb-4">Runs on your<br /><span className="text-[#86868b]">machine.</span></h2>
-                <p className="text-[17px] text-[#86868b] leading-relaxed mb-6">No SaaS lock-in, no API quotas for indexing. ChromaDB stores vectors locally. SQLite keeps your conversation history. Your code never leaves your computer.</p>
-                <ul className="space-y-3 text-[14px] text-[#86868b]">
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>SQLite for conversation history and metadata</span></li>
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>ChromaDB persistent client for vector storage</span></li>
-                  <li className="flex items-start gap-3"><Check size={16} className="text-[#7ee787] mt-0.5 shrink-0" /><span>Streaming responses via Server-Sent Events</span></li>
-                </ul>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6">
-        <FadeIn className="max-w-2xl mx-auto text-center">
-          <h2 className="text-[32px] sm:text-[40px] font-bold tracking-tight mb-4">Stop grepping. Start asking.</h2>
-          <p className="text-[17px] text-[#86868b] mb-8">Clone the repo, install dependencies, and start chatting with your codebase in under 5 minutes.</p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/chat" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg text-[15px] font-semibold hover:bg-[#f5f5f7] transition-colors">Launch Web UI<ArrowRight size={16} /></Link>
-            <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 bg-white/[0.04] hover:bg-white/[0.08] text-white rounded-lg text-[15px] font-medium transition-colors ring-1 ring-white/[0.08]"><Github size={16} />View Source</a>
+            ))}
           </div>
         </FadeIn>
       </section>
 
-      <footer className="py-12 px-6 border-t border-white/[0.06]">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg bg-white/[0.08] flex items-center justify-center ring-1 ring-white/[0.08]"><Terminal size={16} className="text-white" /></div><div><div className="text-[15px] font-semibold">Reposcope</div><div className="text-[12px] text-[#636366]">Chat with any codebase</div></div></div>
-            <div className="flex items-center gap-8 text-[13px] text-[#636366]"><a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a><Link href="/chat" className="hover:text-white transition-colors">Web UI</Link></div>
+      <section id="stack" className="pt-32 pb-24 border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-20 items-start">
+            <FadeIn>
+              <SectionLabel num="4.0" label="Stack" />
+              <h2 className="text-[40px] sm:text-[56px] font-semibold tracking-[-0.03em] mt-4 mb-4">
+                Runs on your<br /><span className="text-white/20">machine.</span>
+              </h2>
+              <p className="text-[16px] text-white/35 leading-relaxed mb-8 max-w-md">
+                No SaaS lock-in. ChromaDB stores vectors locally. SQLite keeps conversation history. Your code never leaves your computer.
+              </p>
+              <Link href="/chat" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[14px] font-medium text-white transition-all hover:opacity-90" style={{ backgroundColor: ACCENT }}>
+                Get Started <ChevronRight size={14} />
+              </Link>
+            </FadeIn>
+            <FadeIn delay={150}><StackGrid /></FadeIn>
           </div>
-          <div className="mt-8 pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#636366]"><p>MIT License. Built with FastAPI, Next.js, ChromaDB, and tree-sitter.</p><p>Powered by Groq and Jina AI.</p></div>
+        </div>
+      </section>
+
+      <section className="py-24 border-t border-white/[0.04]">
+        <div className="max-w-xl mx-auto px-6 text-center">
+          <FadeIn>
+            <h2 className="text-[44px] sm:text-[60px] font-semibold tracking-[-0.04em] mb-6">
+              Stop grepping.<br /><span className="text-white/20">Start asking.</span>
+            </h2>
+            <p className="text-[17px] text-white/30 mb-10 leading-relaxed">Clone the repo, install dependencies, start chatting in under five minutes.</p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/chat" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-white transition-all hover:opacity-90 group" style={{ backgroundColor: ACCENT }}>
+                Launch Web UI <ChevronRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-[15px] font-medium text-white/40 hover:text-white/70 border border-white/[0.08] hover:border-white/[0.15] transition-all">
+                <Github size={16} /> View Source
+              </a>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      <footer className="py-10 border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Reposcope logo" className="w-5 h-5 rounded" />
+            <span className="text-[13px] font-semibold text-white/60">Reposcope</span>
+          </div>
+          <div className="flex items-center gap-6 text-[12px] text-white/20">
+            <a href="https://github.com/whoknowsasaint/reposcope" target="_blank" rel="noopener noreferrer" className="hover:text-white/50 transition-colors">GitHub</a>
+            <Link href="/chat" className="hover:text-white/50 transition-colors">Web UI</Link>
+          </div>
+          <p className="text-[11px] text-white/15">MIT · FastAPI · Next.js · ChromaDB · tree-sitter</p>
         </div>
       </footer>
     </main>

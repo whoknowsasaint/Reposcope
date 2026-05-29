@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Terminal,
   FileCode,
-  Settings,
   AlertTriangle,
   X,
   ChevronDown,
@@ -14,6 +13,13 @@ import {
   MessageSquare,
   Plus,
   Check,
+  Search,
+  Sparkles,
+  GitBranch,
+  Database,
+  Server,
+  Layers,
+  Zap,
 } from "lucide-react";
 import { ChatInput } from "@/components/chat-input";
 import { ChatMessage } from "@/components/chat-message";
@@ -44,6 +50,8 @@ import {
   type StreamEvent,
 } from "@/lib/api";
 
+const ACCENT = "#5E6AD2"; // matching homepage
+
 /* ─── Keyboard Shortcuts ─── */
 function useKeyboardShortcuts(shortcuts: Record<string, () => void>) {
   useEffect(() => {
@@ -68,11 +76,11 @@ function useKeyboardShortcuts(shortcuts: Record<string, () => void>) {
   }, [shortcuts]);
 }
 
-/* ─── Error Toast ─── */
+/* ─── Error Toast (glass style) ─── */
 function ErrorToast({ message, onClose }: { message: string; onClose: () => void }) {
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md">
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 ring-1 ring-red-500/20 shadow-xl">
+    <div className="fixed top-4 right-4 z-50 max-w-md animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-500/10 backdrop-blur-xl text-red-400 ring-1 ring-red-500/20 shadow-xl">
         <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
         <div className="flex-1">
           <p className="text-[13px] font-medium">Error</p>
@@ -86,14 +94,26 @@ function ErrorToast({ message, onClose }: { message: string; onClose: () => void
   );
 }
 
-/* ─── Source Panel ─── */
-function SourcePanel({
-  chunks,
-  onClose,
-}: {
-  chunks: Chunk[];
-  onClose: () => void;
-}) {
+/* ─── Success Toast ─── */
+function SuccessToast({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed top-4 right-4 z-50 max-w-md animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 backdrop-blur-xl text-emerald-400 ring-1 ring-emerald-500/20 shadow-xl">
+        <Check size={16} className="mt-0.5 flex-shrink-0" />
+        <div className="flex-1">
+          <p className="text-[13px] font-medium">Success</p>
+          <p className="text-[12px] text-emerald-300 mt-0.5">{message}</p>
+        </div>
+        <button onClick={onClose} className="text-emerald-400/60 hover:text-emerald-400">
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Source Panel (glass) ─── */
+function SourcePanel({ chunks, onClose }: { chunks: Chunk[]; onClose: () => void }) {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   if (!chunks.length) return null;
@@ -105,52 +125,56 @@ function SourcePanel({
   }, {} as Record<string, Chunk[]>);
 
   return (
-    <div className="w-80 h-full bg-[#0d1117] border-l border-white/[0.06] flex flex-col">
-      <div className="flex items-center justify-between p-3 border-b border-white/[0.06]">
-        <span className="text-[13px] font-semibold">Sources</span>
-        <button onClick={onClose} className="text-[#636366] hover:text-white">
+    <div className="w-80 h-full bg-[#0a0a0c]/90 backdrop-blur-xl border-l border-white/[0.08] flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <FileCode size={14} className="text-emerald-400" />
+          <span className="text-[13px] font-medium text-white/70">Sources</span>
+          <span className="text-[11px] text-white/30 font-mono">{chunks.length} chunks</span>
+        </div>
+        <button onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors">
           <X size={16} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {Object.entries(files).map(([path, fileChunks]) => (
-          <div key={path} className="border-b border-white/[0.04]">
+          <div key={path} className="rounded-lg border border-white/[0.06] overflow-hidden">
             <button
               onClick={() => setSelectedFile(selectedFile === path ? null : path)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-white/[0.02] transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
             >
               {selectedFile === path ? (
-                <ChevronDown size={14} className="text-[#636366]" />
+                <ChevronDown size={12} className="text-white/40" />
               ) : (
-                <ChevronRight size={14} className="text-[#636366]" />
+                <ChevronRight size={12} className="text-white/40" />
               )}
-              <FileCode size={14} className="text-blue-400" />
-              <span className="text-[12px] text-[#8b949e] font-mono truncate">
+              <FileCode size={12} className="text-blue-400" />
+              <span className="text-[12px] text-white/60 font-mono truncate">
                 {path.split("/").pop()}
               </span>
-              <span className="text-[11px] text-[#636366] ml-auto">
+              <span className="text-[10px] text-white/30 ml-auto font-mono">
                 {fileChunks.length}
               </span>
             </button>
 
             {selectedFile === path && (
-              <div className="px-3 pb-2 space-y-1">
+              <div className="px-3 pb-2 space-y-1 bg-white/[0.02]">
                 {fileChunks.map((chunk, i) => (
                   <div
                     key={i}
-                    className="p-2 rounded-lg bg-white/[0.02] ring-1 ring-white/[0.04]"
+                    className="p-2 rounded-md bg-white/[0.03] ring-1 ring-white/[0.06]"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[11px] text-emerald-400 font-medium">
+                      <span className="text-[10px] text-emerald-400 font-mono uppercase">
                         {chunk.chunk_type}
                       </span>
-                      <span className="text-[11px] text-[#636366] font-mono">
+                      <span className="text-[10px] text-white/30 font-mono">
                         L{chunk.start_line}-{chunk.end_line}
                       </span>
                     </div>
                     {chunk.content && (
-                      <pre className="text-[11px] text-[#8b949e] font-mono leading-relaxed line-clamp-3">
+                      <pre className="text-[10px] text-white/40 font-mono leading-relaxed line-clamp-3">
                         {chunk.content}
                       </pre>
                     )}
@@ -165,7 +189,7 @@ function SourcePanel({
   );
 }
 
-/* ─── Icon Rail ─── */
+/* ─── Icon Rail (compact sidebar toggle) - glass ─── */
 function IconRail({
   onExpand,
   onNewChat,
@@ -180,24 +204,23 @@ function IconRail({
   onSelectConversation: (id: number) => void;
 }) {
   return (
-    <div className="w-14 h-full bg-[#0d1117] border-r border-white/[0.06] flex flex-col items-center py-3 gap-2">
+    <div className="w-14 h-full bg-[#0a0a0c]/80 backdrop-blur-xl border-r border-white/[0.08] flex flex-col items-center py-3 gap-2">
       <button
         onClick={onExpand}
-        className="p-2 hover:bg-white/[0.06] rounded-lg text-[#636366] hover:text-white transition-colors"
+        className="p-2 hover:bg-white/[0.08] rounded-lg text-white/40 hover:text-white/80 transition-all"
         title="Expand sidebar"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="6" y1="4" x2="14" y2="10" />
-          <polyline points="14,4 14,16" />
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6,4 12,9 6,14" />
         </svg>
       </button>
 
       <button
         onClick={onNewChat}
-        className="p-2 hover:bg-white/[0.06] rounded-lg text-[#636366] hover:text-white transition-colors"
+        className="p-2 hover:bg-white/[0.08] rounded-lg text-white/40 hover:text-white/80 transition-all"
         title="New chat (⌘K)"
       >
-        <Plus size={18} strokeWidth={1.5} />
+        <Plus size={16} strokeWidth={1.5} />
       </button>
 
       <div className="flex-1 overflow-y-auto w-full px-1 space-y-0.5">
@@ -205,10 +228,10 @@ function IconRail({
           <button
             key={conv.id}
             onClick={() => onSelectConversation(conv.id)}
-            className={`w-full p-2 rounded-lg flex items-center justify-center transition-colors ${
+            className={`w-full p-2 rounded-lg flex items-center justify-center transition-all ${
               selectedConversation === conv.id
-                ? "bg-white/[0.08] text-blue-400"
-                : "text-[#636366] hover:bg-white/[0.04] hover:text-[#8b949e]"
+                ? "bg-white/[0.12] text-blue-400 ring-1 ring-white/[0.1]"
+                : "text-white/30 hover:bg-white/[0.06] hover:text-white/60"
             }`}
             title={conv.title}
           >
@@ -252,14 +275,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // ─── Streaming batching refs ───
   const tokenBufferRef = useRef("");
   const rafRef = useRef<number>();
-
-  // ─── Scroll tracking ───
   const userScrolledRef = useRef(false);
 
-  // ─── Stable callbacks for memo ───
   const handleRetry = useCallback(() => retryLastMessage(), []);
   const handleDeleteMessage = useCallback((i: number) => {
     setMessages((prev) => prev.filter((_, idx) => idx !== i));
@@ -362,7 +381,6 @@ export default function ChatPage() {
       abortStreamRef.current = null;
     }
     setIsStreaming(false);
-    // Mark the last assistant message so retry button appears
     setMessages((prev) => {
       const updated = [...prev];
       const last = updated[updated.length - 1];
@@ -413,17 +431,12 @@ export default function ChatPage() {
       selectedConversation,
       (event: StreamEvent) => {
         if (event.type === "token") {
-          // Batch tokens via requestAnimationFrame
           tokenBufferRef.current += event.content;
-          
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
-          
           rafRef.current = requestAnimationFrame(() => {
             const buffer = tokenBufferRef.current;
             tokenBufferRef.current = "";
-            
             if (!buffer) return;
-            
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -434,7 +447,6 @@ export default function ChatPage() {
             });
           });
         } else if (event.type === "done") {
-          // Flush any remaining buffer immediately
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
           if (tokenBufferRef.current) {
             setMessages((prev) => {
@@ -447,14 +459,12 @@ export default function ChatPage() {
             });
             tokenBufferRef.current = "";
           }
-          
           setIsStreaming(false);
           setCurrentChunks(event.chunks || []);
           setShowSources(true);
         } else if (event.type === "error") {
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
           tokenBufferRef.current = "";
-          
           setIsStreaming(false);
           setMessages((prev) => {
             const updated = [...prev];
@@ -469,7 +479,6 @@ export default function ChatPage() {
       (streamErr) => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
         tokenBufferRef.current = "";
-        
         setIsStreaming(false);
         setMessages((prev) => {
           const updated = [...prev];
@@ -491,13 +500,8 @@ export default function ChatPage() {
     const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
     if (!lastUserMsg) return;
 
-    // Force reset streaming state
     setIsStreaming(false);
-    
-    // Remove the failed assistant message
     setMessages((prev) => prev.slice(0, -1));
-
-    // Small delay to let state settle
     await new Promise(r => setTimeout(r, 50));
 
     const placeholder = {
@@ -507,11 +511,9 @@ export default function ChatPage() {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, placeholder]);
-
     setIsStreaming(true);
     setCurrentChunks([]);
-
-  
+    tokenBufferRef.current = "";
 
     const abort = streamMessage(
       selectedRepo,
@@ -520,15 +522,11 @@ export default function ChatPage() {
       (event: StreamEvent) => {
         if (event.type === "token") {
           tokenBufferRef.current += event.content;
-          
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
-          
           rafRef.current = requestAnimationFrame(() => {
             const buffer = tokenBufferRef.current;
             tokenBufferRef.current = "";
-            
             if (!buffer) return;
-            
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -551,14 +549,12 @@ export default function ChatPage() {
             });
             tokenBufferRef.current = "";
           }
-          
           setIsStreaming(false);
           setCurrentChunks(event.chunks || []);
           setShowSources(true);
         } else if (event.type === "error") {
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
           tokenBufferRef.current = "";
-          
           setIsStreaming(false);
           setMessages((prev) => {
             const updated = [...prev];
@@ -573,7 +569,6 @@ export default function ChatPage() {
       (streamErr) => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
         tokenBufferRef.current = "";
-        
         setIsStreaming(false);
         setMessages((prev) => {
           const updated = [...prev];
@@ -605,7 +600,6 @@ export default function ChatPage() {
         return;
       }
     }
-
     handleSendMessage(query);
   }
 
@@ -658,7 +652,6 @@ export default function ChatPage() {
 
     try {
       await updateRepo(repoId);
-
       const pollInterval = setInterval(async () => {
         try {
           const status = await getIndexingStatus(repoId);
@@ -721,7 +714,7 @@ export default function ChatPage() {
 
   const selectedRepoData = repos.find((r) => r.repo_id === selectedRepo);
 
-  // ─── Scroll handling ───
+  // Scroll handling
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -748,7 +741,6 @@ export default function ChatPage() {
     setShowScrollButton(false);
   }
 
-  // Auto-scroll: only if user hasn't manually scrolled up
   useEffect(() => {
     if (!messagesEndRef.current) return;
     if (!userScrolledRef.current) {
@@ -757,37 +749,26 @@ export default function ChatPage() {
   }, [messages.length, isStreaming]);
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
-          {/* Offline Banner */}
-          {showBanner && (
-            <div className="fixed inset-x-0 top-16 z-50 flex justify-center pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="pointer-events-auto px-5 py-2.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[13px] text-amber-400/90 backdrop-blur-sm shadow-lg"
-              >
-                Backend offline - run locally with{" "}
-                <code className="px-1.5 py-0.5 bg-amber-500/10 rounded text-[12px] font-mono">reposcope server</code>
-              </motion.div>
+    <div className="h-screen bg-[#08090a] text-white flex overflow-hidden">
+      {/* Offline Banner - glass */}
+      <AnimatePresence>
+        {showBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed inset-x-0 top-16 z-50 flex justify-center pointer-events-none"
+          >
+            <div className="pointer-events-auto px-5 py-2.5 rounded-full bg-amber-500/10 backdrop-blur-xl border border-amber-500/20 text-[13px] text-amber-400/90 shadow-lg">
+              Backend offline - run locally with{" "}
+              <code className="px-1.5 py-0.5 bg-amber-500/10 rounded text-[12px] font-mono">reposcope server</code>
             </div>
-          )}
-      {error && <ErrorToast message={error} onClose={() => setError(null)} />}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {successToast && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 shadow-xl">
-            <Check size={16} className="mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-[13px] font-medium">Success</p>
-              <p className="text-[12px] text-emerald-300 mt-0.5">{successToast}</p>
-            </div>
-            <button onClick={() => setSuccessToast(null)} className="text-emerald-400/60 hover:text-emerald-400">
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-      )}
+      {error && <ErrorToast message={error} onClose={() => setError(null)} />}
+      {successToast && <SuccessToast message={successToast} onClose={() => setSuccessToast(null)} />}
 
       <MobileSidebar
         isOpen={mobileSidebarOpen}
@@ -799,6 +780,7 @@ export default function ChatPage() {
         onNewConversation={(id) => setSelectedConversation(id)}
       />
 
+      {/* Desktop Sidebar with original arrow + circle */}
       <div
         className={`hidden lg:block h-full flex-shrink-0 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           sidebarOpen ? "w-72" : "w-14"
@@ -825,29 +807,34 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Original arrow with circle - restored exactly, wrapped in circle */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[48%] z-10 text-[#484848] hover:text-[#b0b0b0] transition-colors duration-300"
+          className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[52%] z-10 group"
         >
-          {sidebarOpen ? (
-            <svg width="52" height="24" viewBox="0 0 52 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="12" x2="44" y2="12" />
-              <polyline points="14,4 4,12 14,20" />
-            </svg>
-          ) : (
-            <svg width="52" height="24" viewBox="0 0 52 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="8" y1="12" x2="48" y2="12" />
-              <polyline points="38,4 48,12 38,20" />
-            </svg>
-          )}
+          <div className="w-10 h-10 rounded-full bg-[#0a0a0c]/80 backdrop-blur-xl ring-1 ring-white/[0.1] flex items-center justify-center transition-all group-hover:ring-white/[0.2] group-hover:bg-white/[0.05]">
+            {sidebarOpen ? (
+              <svg width="28" height="18" viewBox="0 0 52 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 group-hover:text-white/90">
+                <line x1="4" y1="12" x2="44" y2="12" />
+                <polyline points="14,4 4,12 14,20" />
+              </svg>
+            ) : (
+              <svg width="28" height="18" viewBox="0 0 52 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 group-hover:text-white/90">
+                <line x1="8" y1="12" x2="48" y2="12" />
+                <polyline points="38,4 48,12 38,20" />
+              </svg>
+            )}
+          </div>
         </button>
 
-        <div className="h-12 flex items-center justify-between px-4 border-b border-white/[0.06] flex-shrink-0">
+        {/* Top bar - glass */}
+        <div className="h-12 flex items-center justify-between px-4 border-b border-white/[0.08] flex-shrink-0 bg-[#0a0a0c]/80 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-1.5 hover:bg-white/[0.06] rounded-lg text-[#636366] hover:text-white transition-colors"
+              className="lg:hidden p-1.5 hover:bg-white/[0.08] rounded-lg text-white/40 hover:text-white/80 transition-colors"
             >
               <Menu size={16} />
             </button>
@@ -869,23 +856,18 @@ export default function ChatPage() {
             <button
               onClick={() => setShowSources(!showSources)}
               disabled={currentChunks.length === 0}
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-all ${
                 showSources
-                  ? "bg-blue-500/10 text-blue-400"
-                  : "text-[#636366] hover:text-white hover:bg-white/[0.06]"
+                  ? "bg-white/[0.1] text-blue-400 ring-1 ring-white/[0.1]"
+                  : "text-white/40 hover:text-white/80 hover:bg-white/[0.06]"
               } disabled:opacity-30`}
             >
               <FileCode size={16} />
             </button>
-            {/*<Link
-              href="/settings"
-              className="p-1.5 hover:bg-white/[0.06] rounded-lg text-[#636366] hover:text-white transition-colors"
-            >
-              <Settings size={16} />
-            </Link>*/}
           </div>
         </div>
 
+        {/* Chat area */}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 flex flex-col min-w-0">
             {messages.length === 0 ? (
@@ -923,7 +905,7 @@ export default function ChatPage() {
                 {showScrollButton && (
                   <button
                     onClick={scrollToBottom}
-                    className="sticky bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#1c1c1e] ring-1 ring-white/[0.1] flex items-center justify-center hover:bg-[#2c2c2e] transition-all shadow-lg z-10 mx-auto"
+                    className="sticky bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#1c1c1e]/80 backdrop-blur-xl ring-1 ring-white/[0.1] flex items-center justify-center hover:bg-[#2c2c2e] transition-all shadow-lg z-10 mx-auto"
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3,6 7,10 11,6" />
@@ -954,47 +936,58 @@ export default function ChatPage() {
             <SourcePanel chunks={currentChunks} onClose={() => setShowSources(false)} />
           )}
         </div>
-        {expandedMessage && (
-          <div className="absolute inset-0 z-30 bg-[#0a0a0c] flex flex-col" onClick={() => setExpandedMessage(null)}>
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06] flex-shrink-0">
-              <span className="text-[13px] font-medium text-[#e5e5e7]">Response</span>
-              <button onClick={() => setExpandedMessage(null)} className="p-1.5 hover:bg-white/[0.06] rounded-lg text-[#636366] hover:text-white transition-colors">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-              <div className="max-w-3xl mx-auto text-[15px] text-[#e5e5e7] leading-relaxed">
-                <ReactMarkdown
-                  components={{
-                    code({ children, className, ...props }: any) {
-                      const match = /language-(\w+)/.exec(className || "");
-                      const code = String(children).replace(/\n$/, "");
-                      if (!props.inline && match) {
-                        return (
-                          <div className="my-3 rounded-xl overflow-hidden ring-1 ring-white/[0.08]">
-                            <SyntaxHighlighter style={vscDarkPlus} language={match[1]} PreTag="div" customStyle={{ margin: 0, padding: "1rem", fontSize: "0.8125rem", lineHeight: "1.6", background: "#0d1117" }}>
-                              {code}
-                            </SyntaxHighlighter>
-                          </div>
-                        );
-                      }
-                      return <code className="bg-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-[#e5e5e7]" {...props}>{children}</code>;
-                    },
-                    p({ children }: any) { return <p className="mb-3 last:mb-0">{children}</p>; },
-                    ul({ children }: any) { return <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>; },
-                    ol({ children }: any) { return <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>; },
-                    li({ children }: any) { return <li className="text-[15px]">{children}</li>; },
-                    strong({ children }: any) { return <strong className="font-semibold text-white">{children}</strong>; },
-                    pre({ children }: any) { return <pre className="!bg-transparent !p-0 !m-0">{children}</pre>; },
-                  }}
-                >
-                  {expandedMessage.content}
-                </ReactMarkdown>
+
+        {/* Expanded message modal - glass */}
+        <AnimatePresence>
+          {expandedMessage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-30 bg-[#08090a]/80 backdrop-blur-2xl flex flex-col"
+              onClick={() => setExpandedMessage(null)}
+            >
+              <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.08] flex-shrink-0 bg-[#0a0a0c]/50">
+                <span className="text-[13px] font-medium text-white/70">Response</span>
+                <button onClick={() => setExpandedMessage(null)} className="p-1.5 hover:bg-white/[0.08] rounded-lg text-white/40 hover:text-white/80 transition-colors">
+                  <X size={16} />
+                </button>
               </div>
-            </div>
-          </div>
-        )}
+              <div className="flex-1 overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+                <div className="max-w-3xl mx-auto text-[15px] text-white/70 leading-relaxed">
+                  <ReactMarkdown
+                    components={{
+                      code({ children, className, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        const code = String(children).replace(/\n$/, "");
+                        if (!props.inline && match) {
+                          return (
+                            <div className="my-3 rounded-xl overflow-hidden ring-1 ring-white/[0.08]">
+                              <SyntaxHighlighter style={vscDarkPlus} language={match[1]} PreTag="div" customStyle={{ margin: 0, padding: "1rem", fontSize: "0.8125rem", lineHeight: "1.6", background: "#0d1117" }}>
+                                {code}
+                              </SyntaxHighlighter>
+                            </div>
+                          );
+                        }
+                        return <code className="bg-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-white/80" {...props}>{children}</code>;
+                      },
+                      p({ children }: any) { return <p className="mb-3 last:mb-0">{children}</p>; },
+                      ul({ children }: any) { return <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>; },
+                      ol({ children }: any) { return <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>; },
+                      li({ children }: any) { return <li className="text-[15px]">{children}</li>; },
+                      strong({ children }: any) { return <strong className="font-semibold text-white/90">{children}</strong>; },
+                      pre({ children }: any) { return <pre className="!bg-transparent !p-0 !m-0">{children}</pre>; },
+                    }}
+                  >
+                    {expandedMessage.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
       <ConfirmModal
         isOpen={deleteModalOpen}
         onClose={() => {

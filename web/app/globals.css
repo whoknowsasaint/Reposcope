@@ -63,3 +63,19 @@ div::-webkit-scrollbar-corner {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+
+/* Force screenshots to stay at desktop width, clip on mobile, no scroll */
+.screenshot-desktop-clip {
+  width: 1150px;          
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Override any responsive padding that would cause restacking */
+@media (max-width: 768px) {
+  .no-mobile-padding {
+    padding-left: 3.5 !important;
+    padding-right: 0 !important;
+  }
+}
