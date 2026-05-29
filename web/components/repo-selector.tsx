@@ -130,7 +130,16 @@ export function RepoSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-[360px] bg-[#111113] rounded-xl ring-1 ring-white/[0.08] shadow-2xl overflow-hidden z-50 backdrop-blur-2xl">
+        <div className="absolute top-full left-0 mt-2 w-[360px] overflow-hidden z-50"
+          style={{
+            background: "rgba(30, 30, 35, 0.65)",
+            borderRadius: "30px",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+            backdropFilter: "blur(60px) saturate(1.2)",
+            WebkitBackdropFilter: "blur(60px) saturate(1.2)",
+          }}
+          >
           {showProgress ? (
             <div className="p-5">
               <div>

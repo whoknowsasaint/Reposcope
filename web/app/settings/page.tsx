@@ -70,7 +70,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState("general");
 
-  // Load from localStorage on mount
+ 
   useEffect(() => {
     const stored = localStorage.getItem("reposcope-settings");
     if (stored) {

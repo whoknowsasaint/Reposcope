@@ -612,103 +612,346 @@ function TerminalProduct({ onStateChange }: { onStateChange?: (s: { currentLine:
   );
 }
 
+/* ─── Pipeline — redesigned ─── */
 function PipelineProduct({ state }: { state: PipelineState }) {
-  const stations: { id: "clone" | "parse" | "chunk" | "embed" | "store"; label: string; icon: React.ElementType; desc: string }[] = [
-    { id: "clone", label: "Clone", icon: GitBranch, desc: "Download" },
-    { id: "parse", label: "Parse", icon: Layers, desc: "Build AST" },
-    { id: "chunk", label: "Chunk", icon: FileCode, desc: "Split" },
-    { id: "embed", label: "Embed", icon: Database, desc: "Vectors" },
-    { id: "store", label: "Store", icon: Server, desc: "Persist" },
+  type StageId = "clone" | "parse" | "chunk" | "embed" | "store";
+
+  const stages: {
+    id: StageId;
+    label: string;
+    icon: React.ElementType;
+    detail: string;
+    output: string;
+  }[] = [
+    { id: "clone",  label: "Clone",  icon: GitBranch, detail: "Fetch source tree",       output: "246 files" },
+    { id: "parse",  label: "Parse",  icon: Layers,    detail: "Walk syntax tree",         output: "564 nodes" },
+    { id: "chunk",  label: "Chunk",  icon: FileCode,  detail: "Segment by AST boundary", output: "564 chunks" },
+    { id: "embed",  label: "Embed",  icon: Database,  detail: "Vectorize with Jina v3",  output: "1536-dim" },
+    { id: "store",  label: "Store",  icon: Server,    detail: "Write HNSW index",         output: "ChromaDB" },
   ];
-  const stepOrder = ["clone", "parse", "chunk", "embed", "store"];
-  const getStatus = (id: string) => {
+
+  const stepOrder: StageId[] = stages.map((s) => s.id);
+
+  const getStatus = (id: string): "idle" | "done" | "active" | "pending" => {
     if (state.phase === "idle") return "idle";
     if (state.phase === "complete") return "done";
     if (state.phase !== "running") return "idle";
-    const cur = stepOrder.indexOf(state.step ?? "");
-    const idx = stepOrder.indexOf(id);
+
+    const currentStep = state.step;
+    if (!currentStep) return "pending"; 
+
+    const cur = stepOrder.indexOf(currentStep);
+    const idx = stepOrder.indexOf(id as StageId);
     if (idx < cur) return "done";
     if (idx === cur) return "active";
-    return "idle";
+    return "pending";
   };
-  const getProgress = () => {
-    if (state.phase === "idle") return 0;
-    if (state.phase === "complete") return 100;
-    if (state.phase !== "running" || !state.step) return 0;
-    return ((stepOrder.indexOf(state.step) + 0.5) / stepOrder.length) * 100;
-  };
+
+  const activeIdx = state.phase === "running"
+    ? state.step ? stepOrder.indexOf(state.step) : -1
+    : state.phase === "complete" ? stepOrder.length : -1;
+
+  const progressPct = state.phase === "idle" ? 0
+    : state.phase === "complete" ? 100
+    : ((activeIdx + 0.5) / stepOrder.length) * 100;
+
+  const isRunning = state.phase === "running";
+  const isComplete = state.phase === "complete";
+
 
   return (
     <div className="relative pl-6 pr-0 sm:px-6 lg:px-16 no-mobile-padding">
       <ScreenshotWrapper>
-        <div style={{ backgroundColor: "#111113" }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]" style={{ backgroundColor: "#0c0c0e" }}>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: state.phase === "complete" ? ACCENT : state.phase === "running" ? "#fbbf24" : "rgba(255,255,255,0.15)" }} />
-              <span className="text-[11px] font-mono text-white/30 uppercase tracking-widest">
-                {state.phase === "idle" ? "Standby" : state.phase === "running" ? "Processing" : "Complete"}
-              </span>
-            </div>
-            <span className="text-[11px] font-mono text-white/20">
-              {state.phase === "running" && <><span style={{ color: ACCENT }}>{state.stats.filesDone}</span>/{state.stats.filesTotal} files</>}
-              {state.phase === "complete" && <span style={{ color: ACCENT }}>246 files · 564 chunks</span>}
-            </span>
-          </div>
+        <div style={{ backgroundColor: "#0d0d0f" }}>
 
-          <div className="px-4 sm:px-8 py-8 sm:py-10 relative overflow-hidden">
-            <div className="relative flex items-start justify-between min-w-[480px]">
-              <div className="absolute left-0 right-0 top-[28px] h-px bg-white/[0.06]" />
-              <motion.div
-                className="absolute left-0 top-[28px] h-px"
-                style={{ backgroundColor: ACCENT + "80" }}
-                initial={{ width: "0%" }}
-                animate={{ width: `${getProgress()}%` }}
-                transition={{ duration: 2.5, ease: "easeInOut" }}
-              />
-              {stations.map((s) => {
-                const st = getStatus(s.id);
-                const Icon = s.icon;
-                return (
-                  <div key={s.id} className="flex flex-col items-center gap-3 relative z-10">
-                    <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-300"
-                      style={{
-                        backgroundColor: st === "done" || st === "active" ? ACCENT + "18" : "rgba(255,255,255,0.03)",
-                        borderColor: st === "done" || st === "active" ? ACCENT + "50" : "rgba(255,255,255,0.07)",
-                      }}
-                    >
-                      {st === "done" ? <Check size={20} style={{ color: ACCENT }} /> : <Icon size={20} className={st === "active" ? "text-white/70" : "text-white/15"} />}
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className={`text-[13px] font-medium ${st === "idle" ? "text-white/20" : "text-white/80"}`}>{s.label}</span>
-                      <span className="text-[11px] text-white/20">{s.desc}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mx-4 sm:mx-6 mb-5 rounded-xl border border-white/[0.05] px-5 py-4 font-mono text-[12px] sm:text-[13px]" style={{ backgroundColor: "rgba(255,255,255,0.02)" }}>
-            {state.phase === "idle" && <span className="text-white/20">Run the terminal above to watch the pipeline live.</span>}
-            {state.phase === "running" && state.file && (
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-white/40">{state.file.name}</span>
-                <span className="text-white/15">→</span>
-                <span style={{ color: ACCENT }}>
-                  {state.step === "clone" && "downloading..."}
-                  {state.step === "parse" && "building AST..."}
-                  {state.step === "chunk" && `${state.file.chunks.length} chunks`}
-                  {state.step === "embed" && `${state.file.chunks.length} vectors`}
-                  {state.step === "store" && "persisting..."}
-                </span>
-                <div className="ml-auto w-20 h-0.5 bg-white/[0.07] rounded-full overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ backgroundColor: ACCENT }} animate={{ width: ["0%", "100%"] }} transition={{ duration: 4, ease: "easeInOut" }} />
+          {/* ── Header bar ── */}
+          <div
+            className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]"
+            style={{ backgroundColor: "#09090b" }}
+          >
+            <div className="flex items-center gap-3">
+              {/* Status indicator */}
+              <div className="relative w-5 h-5 flex items-center justify-center flex-shrink-0">
+                {isRunning && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    style={{ backgroundColor: "#fbbf2420" }}
+                    animate={{ scale: [1, 2, 1], opacity: [0.7, 0, 0.7] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{
+                    backgroundColor: isComplete ? "#4ade80"
+                      : isRunning ? "#fbbf24"
+                      : "rgba(255,255,255,0.15)",
+                  }}
+                />
+              </div>
+              <div>
+                <div className="text-[13px] font-medium text-white/70 leading-none">
+                  {state.phase === "idle" ? "Indexing pipeline"
+                    : isRunning ? "Processing..."
+                    : "Complete"}
+                </div>
+                <div className="text-[11px] text-white/25 font-mono mt-1">
+                  {state.phase === "idle" && "Awaiting input"}
+                  {isRunning && `${state.stats.filesDone} / ${state.stats.filesTotal} files · ${state.stats.chunksDone} chunks`}
+                  {isComplete && "246 files · 564 chunks · 38.2s"}
                 </div>
               </div>
-            )}
-            {state.phase === "complete" && <span style={{ color: ACCENT }}>&#10003; 564 chunks indexed · ready for semantic search</span>}
+            </div>
+
+            {/* Elapsed / done pill */}
+            <AnimatePresence mode="wait">
+              {isComplete && (
+                <motion.div
+                  key="done"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium border"
+                  style={{ color: "#4ade80", backgroundColor: "#4ade8010", borderColor: "#4ade8025" }}
+                >
+                  <Check size={11} strokeWidth={2.5} />
+                  Indexed
+                </motion.div>
+              )}
+              {isRunning && (
+                <motion.div
+                  key="running"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono border"
+                  style={{ color: "rgba(255,255,255,0.3)", borderColor: "rgba(255,255,255,0.07)", backgroundColor: "rgba(255,255,255,0.03)" }}
+                >
+                  <motion.div
+                    className="w-1 h-1 rounded-full"
+                    style={{ backgroundColor: "#fbbf24" }}
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                  />
+                  live
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {/* ── Stage rows ── */}
+          <div className="px-6 py-5 space-y-1">
+            {stages.map((stage, i) => {
+              const status = getStatus(stage.id);
+              const isDone = status === "done";
+              const isActive = status === "active";
+              const isPending = status === "pending" || status === "idle";
+              const Icon = stage.icon;
+
+              return (
+                <motion.div
+                  key={stage.id}
+                  className="group relative flex items-center gap-4 px-4 py-3.5 rounded-xl transition-colors"
+                  style={{
+                    backgroundColor: isActive
+                      ? `${ACCENT}0c`
+                      : isDone
+                      ? "rgba(255,255,255,0.02)"
+                      : "transparent",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    borderColor: isActive
+                      ? `${ACCENT}30`
+                      : isDone
+                      ? "rgba(255,255,255,0.05)"
+                      : "transparent",
+                  }}
+                  animate={isActive ? { borderColor: [`${ACCENT}20`, `${ACCENT}50`, `${ACCENT}20`] } : {}}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  {/* Left: step number + connector line */}
+                  <div className="flex flex-col items-center flex-shrink-0" style={{ width: "24px" }}>
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono font-semibold flex-shrink-0 transition-all duration-300"
+                      style={{
+                        backgroundColor: isDone
+                          ? "#4ade8015"
+                          : isActive
+                          ? `${ACCENT}20`
+                          : "rgba(255,255,255,0.04)",
+                        color: isDone
+                          ? "#4ade80"
+                          : isActive
+                          ? ACCENT
+                          : "rgba(255,255,255,0.2)",
+                        border: `1px solid ${isDone ? "#4ade8030" : isActive ? `${ACCENT}40` : "rgba(255,255,255,0.08)"}`,
+                      }}
+                    >
+                      <AnimatePresence mode="wait">
+                        {isDone ? (
+                          <motion.div key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 25 }}>
+                            <Check size={11} strokeWidth={2.5} />
+                          </motion.div>
+                        ) : (
+                          <motion.span key="num" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            {i + 1}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {/* Connector */}
+                    {i < stages.length - 1 && (
+                      <div
+                        className="w-px mt-1 flex-1"
+                        style={{
+                          height: "16px",
+                          backgroundColor: isDone ? "#4ade8020" : "rgba(255,255,255,0.06)",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Icon */}
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                    style={{
+                      backgroundColor: isDone
+                        ? "#4ade8010"
+                        : isActive
+                        ? `${ACCENT}18`
+                        : "rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <Icon
+                      size={15}
+                      style={{
+                        color: isDone ? "#4ade80"
+                          : isActive ? ACCENT
+                          : "rgba(255,255,255,0.2)",
+                      }}
+                    />
+                  </div>
+
+                  {/* Label + detail */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-[13px] font-medium transition-colors duration-300"
+                        style={{ color: isPending ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.85)" }}
+                      >
+                        {stage.label}
+                      </span>
+                      {isActive && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -4 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                          style={{ color: ACCENT, backgroundColor: `${ACCENT}18` }}
+                        >
+                          running
+                        </motion.span>
+                      )}
+                    </div>
+                    <div
+                      className="text-[11px] font-mono mt-0.5 transition-colors duration-300"
+                      style={{ color: isPending ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.3)" }}
+                    >
+                      {stage.detail}
+                    </div>
+                  </div>
+
+                  {/* Right: output value / progress */}
+                  <div className="flex-shrink-0 text-right">
+                    <AnimatePresence mode="wait">
+                      {isDone && (
+                        <motion.span
+                          key="output"
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-[11px] font-mono"
+                          style={{ color: "rgba(255,255,255,0.4)" }}
+                        >
+                          {stage.output}
+                        </motion.span>
+                      )}
+                      {isActive && (
+                        <motion.div
+                          key="bar"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex items-center gap-2"
+                        >
+                          <div
+                            className="h-0.5 rounded-full overflow-hidden"
+                            style={{ width: "48px", backgroundColor: "rgba(255,255,255,0.08)" }}
+                          >
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: ACCENT }}
+                              animate={{ width: ["0%", "100%"] }}
+                              transition={{ duration: 5, ease: "easeInOut", repeat: Infinity }}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                      {isPending && !isComplete && (
+                        <motion.span
+                          key="pending"
+                          className="text-[11px] font-mono"
+                          style={{ color: "rgba(255,255,255,0.1)" }}
+                        >
+                          —
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* ── Progress bar footer ── */}
+          <div className="mx-6 mb-6 rounded-xl border border-white/[0.05] overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.02)" }}>
+            <div className="px-5 py-3.5 flex items-center gap-4">
+              {/* Track */}
+              <div className="flex-1 relative h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(255,255,255,0.06)" }}>
+                <motion.div
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{ backgroundColor: isComplete ? "#4ade80" : ACCENT }}
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                />
+              </div>
+              {/* Status text */}
+              <div className="flex-shrink-0 text-right" style={{ minWidth: "180px" }}>
+                <AnimatePresence mode="wait">
+                  {state.phase === "idle" && (
+                    <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[11px] font-mono text-white/20">
+                      Start the terminal to observe
+                    </motion.span>
+                  )}
+                  {isRunning && state.file && (
+                    <motion.div key="running" initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-end gap-2">
+                      <span className="text-[11px] font-mono text-white/35 truncate max-w-[120px]">{state.file.name}</span>
+                      <span className="text-[11px] font-mono" style={{ color: ACCENT }}>
+                        {state.step === "clone" && "fetching..."}
+                        {state.step === "parse" && "parsing..."}
+                        {state.step === "chunk" && "chunking..."}
+                        {state.step === "embed" && "embedding..."}
+                        {state.step === "store" && "storing..."}
+                      </span>
+                    </motion.div>
+                  )}
+                  {isComplete && (
+                    <motion.div key="done" initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-end gap-1.5">
+                      <Check size={11} style={{ color: "#4ade80" }} strokeWidth={2.5} />
+                      <span className="text-[11px] font-mono" style={{ color: "#4ade80" }}>564 chunks ready</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+
         </div>
       </ScreenshotWrapper>
       <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #08090a)" }} />

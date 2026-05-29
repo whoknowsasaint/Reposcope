@@ -9,7 +9,6 @@ import {
   X,
   GitBranch,
   Database,
-  Terminal,
 } from "lucide-react";
 import { listConversations, createConversation, deleteConversation, type Conversation } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/time";
@@ -129,20 +128,26 @@ export function Sidebar({
   }, [focusedIndex]);
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0a0c]/80 backdrop-blur-xl border-r border-white/[0.08]">
+    <div
+      className="h-full flex flex-col border-r border-white/[0.12]"
+      style={{
+        background: "rgba(8, 9, 10, 0.75)",
+        backdropFilter: "blur(32px) saturate(180%)",
+        WebkitBackdropFilter: "blur(32px) saturate(180%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 4px 0 20px rgba(0,0,0,0.2)",
+      }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-white/[0.08]">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-lg bg-white/[0.08] flex items-center justify-center ring-1 ring-white/[0.1]">
-            <Terminal size={14} className="text-white/70" />
-          </div>
+          <img src="/logo.png" alt="Reposcope" className="w-7 h-7 rounded-lg" />
           <Link href="/" className="text-[14px] font-semibold tracking-tight text-white/80 hover:text-white transition-colors">Reposcope</Link>
         </div>
 
         <button
           onClick={handleNewChat}
           disabled={!repoId || isLoading}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/[0.08] hover:bg-white/[0.12] rounded-lg text-[13px] font-medium text-white/70 hover:text-white/90 disabled:opacity-30 transition-all active:scale-[0.98]"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/[0.08] hover:bg-white/[0.12] rounded-lg text-[13px] font-medium text-white/70 hover:text-white/90 disabled:opacity-30 transition-all active:scale-[0.98] backdrop-blur-sm"
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -168,7 +173,7 @@ export function Sidebar({
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search chats..."
-            className="w-full pl-8 pr-7 py-1.5 bg-white/[0.04] rounded-lg text-[12px] text-white/70 placeholder:text-white/30 outline-none focus:ring-1 focus:ring-white/[0.1] transition-all"
+            className="w-full pl-8 pr-7 py-1.5 bg-white/[0.04] rounded-lg text-[12px] text-white/70 placeholder:text-white/30 outline-none focus:ring-1 focus:ring-white/[0.1] transition-all backdrop-blur-sm"
           />
           {searchQuery && (
             <button
@@ -251,7 +256,7 @@ export function Sidebar({
       {/* Footer */}
       <div className="p-4 border-t border-white/[0.08] space-y-3">
         {repoId && repoName && (
-          <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
+          <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06] backdrop-blur-sm">
             <GitBranch size={11} className="text-emerald-400/70 flex-shrink-0" />
             <span className="text-[11px] text-white/50 truncate flex-1 font-mono">
               {repoName}

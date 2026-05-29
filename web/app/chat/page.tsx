@@ -50,7 +50,7 @@ import {
   type StreamEvent,
 } from "@/lib/api";
 
-const ACCENT = "#5E6AD2"; // matching homepage
+const ACCENT = "#5E6AD2"; 
 
 /* ─── Keyboard Shortcuts ─── */
 function useKeyboardShortcuts(shortcuts: Record<string, () => void>) {
@@ -636,7 +636,7 @@ export default function ChatPage() {
             setIndexingError(status.error || "Indexing failed");
           }
         } catch {
-          // Status not yet available
+           
         }
       }, 500);
     } catch (e: any) {
@@ -669,7 +669,7 @@ export default function ChatPage() {
             setIndexingError(status.error || "Update failed");
           }
         } catch {
-          // Progress not available yet
+          
         }
       }, 500);
     } catch (e: any) {
@@ -714,7 +714,7 @@ export default function ChatPage() {
 
   const selectedRepoData = repos.find((r) => r.repo_id === selectedRepo);
 
-  // Scroll handling
+  
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;

@@ -54,14 +54,14 @@ function detectLanguage(filePath: string): string {
   const parts = filePath.split(".");
   if (parts.length < 2) return "text";
   
-  // Handle compound extensions like .d.ts, .test.ts
+ 
   const ext = parts.pop()?.toLowerCase() || "";
   const secondExt = parts.pop()?.toLowerCase();
   
   if (ext === "ts" && secondExt === "d") return "typescript";
   if (LANG_MAP[ext]) return LANG_MAP[ext];
   
-  // Check for Dockerfile, Makefile, etc.
+  
   const basename = filePath.split("/").pop()?.toLowerCase() || "";
   if (basename.startsWith("dockerfile")) return "dockerfile";
   if (basename === "makefile") return "makefile";
